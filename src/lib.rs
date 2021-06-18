@@ -80,7 +80,7 @@ impl Message {
         self
     }
 
-    pub fn set_data<'a>(&'a mut self, data: Vec<String, Value>) -> &'a mut Message {
+    pub fn set_data<'a>(&'a mut self, data: HashMap<String, Value>) -> &'a mut Message {
         self.data = data;
         self
     }
