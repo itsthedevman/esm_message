@@ -80,6 +80,11 @@ impl Message {
         self
     }
 
+    pub fn set_data<'a>(&'a mut self, data: Vec<String, Value>) -> &'a mut Message {
+        self.data = data;
+        self
+    }
+
     pub fn add_metadata<'a>(&'a mut self, name: &'static str, value: Value) -> &'a mut Message {
         self.metadata.insert(name.to_string(), value);
         self
