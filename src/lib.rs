@@ -15,7 +15,7 @@ pub struct Message {
     pub message_type: Type,
 
     resource_id: Option<i64>,
-    pub server_id: Option<String>,
+    pub server_id: Option<Vec<u8>>,
     data: HashMap<String, Value>,
     metadata: HashMap<String, Value>,
     errors: Vec<Error>,
@@ -26,7 +26,6 @@ pub struct Message {
 pub enum Type {
     Connect,
     Disconnect,
-    Testing,
     UpdateKeys,
     Ping,
     Pong
@@ -47,7 +46,7 @@ impl Message {
 
     pub fn from_bytes<F>(data: Vec<u8>, resource_id: ResourceId, server_key_getter: F) -> Result<Message, String>
     where
-        F: Fn(&String) -> Option<Vec<u8>>,
+        F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
     {
         let mut message = decrypt_message(data, server_key_getter)?;
         message.resource_id = Some(resource_id.adapter_id() as i64);
@@ -81,6 +80,11 @@ impl Message {
         self
     }
 
+    pub fn set_data<'a>(&'a mut self, data: HashMap<String, Value>) -> &'a mut Message {
+        self.data = data;
+        self
+    }
+
     pub fn add_metadata<'a>(&'a mut self, name: &'static str, value: Value) -> &'a mut Message {
         self.metadata.insert(name.to_string(), value);
         self
@@ -94,7 +98,7 @@ impl Message {
 
     pub fn as_bytes<F>(&self, server_key_getter: F) -> Result<Vec<u8>, String>
     where
-        F: Fn(&String) -> Option<Vec<u8>>,
+        F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
     {
         let server_id = match self.server_id.clone() {
             Some(id) => id,
@@ -105,14 +109,14 @@ impl Message {
     }
 }
 
-fn encrypt_message<F>(message: &Message, server_id: &String, server_key_getter: F) -> Result<Vec<u8>, String>
+fn encrypt_message<F>(message: &Message, server_id: &Vec<u8>, server_key_getter: F) -> Result<Vec<u8>, String>
 where
-    F: Fn(&String) -> Option<Vec<u8>>,
+    F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
 {
     // Find the server key so the message can be encrypted
     let server_key = match (server_key_getter)(server_id) {
         Some(key) => key,
-        None => return Err(format!("Failed to retrieve server_key for {}", server_id))
+        None => return Err(format!("Failed to retrieve server_key for {:?}", server_id))
     };
 
     // Setup everything for encryption
@@ -134,10 +138,11 @@ where
     };
 
     // Start the packet off as the server_id bytes
-    let mut packet = server_id.as_bytes().to_vec();
+    let mut packet: Vec<u8> = Vec::new();
 
-    // Insert the length of the server_id as byte zero
-    packet.insert(0, packet.len() as u8);
+    // Append the server Id and its size
+    packet.push(server_id.len() as u8);
+    packet.extend(&*server_id);
 
     // Append the nonce length and itself to the packet
     packet.push(nonce_key.len() as u8);
@@ -151,23 +156,18 @@ where
 
 fn decrypt_message<F>(bytes: Vec<u8>, server_key_getter: F) -> Result<Message, String>
 where
-    F: Fn(&String) -> Option<Vec<u8>>,
+    F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
 {
     // The first byte is the length of the server_id so we know how many bytes to extract
     let id_length = bytes[0] as usize;
 
-    // Extract the server ID and convert to a String
+    // Extract the server ID and convert to a vec
     let server_id = bytes[1..=id_length].to_vec();
-    let server_id = String::from_utf8(server_id);
-    let server_id = match server_id {
-        Ok(server_id) => server_id,
-        Err(_e) => return Err("Failed to extract server ID".into()),
-    };
 
     // Find the server key so the message can be decrypted
     let server_key = match (server_key_getter)(&server_id) {
         Some(key) => key,
-        None => return Err(format!("Failed to retrieve server_key for {}", server_id))
+        None => return Err(format!("Failed to retrieve server_key for {:?}", server_id))
     };
 
     // Now to decrypt. First step, extract the nonce
