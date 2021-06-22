@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -14,4 +15,5 @@ pub struct ServerInitialization {
     pub price_per_object: i64,
     pub territory_lifetime: i64,
     pub territory_data: String,
+    pub server_start_time: DateTime<Utc>
 }
