@@ -234,8 +234,8 @@ mod tests {
 
         let server_init = ServerInitialization {
             server_name: "server_name".into(),
-            price_per_object: 10,
-            territory_lifetime: 10,
+            price_per_object: 10.0,
+            territory_lifetime: 10.0,
             territory_data: "[]".into(),
             server_start_time: chrono::Utc::now()
         };
