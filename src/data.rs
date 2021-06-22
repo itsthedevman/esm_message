@@ -8,7 +8,6 @@ pub enum Data {
     ServerInitialization(ServerInitialization)
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ServerInitialization {
     pub server_name: String,
