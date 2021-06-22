@@ -35,7 +35,10 @@ pub struct Message {
     #[serde(rename = "type")]
     pub message_type: Type,
 
+    // Only used between the server and the bot. Ignored between server/client
+    #[serde(skip)]
     resource_id: Option<i64>,
+
     pub server_id: Option<Vec<u8>>,
     data: Data,
     metadata: Metadata,
