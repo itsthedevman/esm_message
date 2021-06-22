@@ -4,10 +4,10 @@ pub mod metadata;
 
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use data::Data;
-use error::{Error, ErrorType};
+pub use data::Data;
+pub use error::{Error, ErrorType};
 use message_io::network::ResourceId;
-use metadata::Metadata;
+pub use metadata::Metadata;
 use rand::random;
 use serde::{Deserialize, Serialize};
 
