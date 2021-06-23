@@ -52,8 +52,8 @@ impl Message {
             message_type,
             resource_id: None,
             server_id: None,
-            data: Data::Empty,
-            metadata: Metadata::Empty,
+            data: Data::Empty(Empty::new()),
+            metadata: Metadata::Empty(Empty::new()),
             errors: Vec::new(),
         }
     }
@@ -113,6 +113,13 @@ pub enum Type {
     UpdateKeys,
     Ping,
     Pong,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Empty {}
+
+impl Empty {
+    pub fn new() -> Self { Empty {} }
 }
 
 ////////////////////////////////////////////////////////////
