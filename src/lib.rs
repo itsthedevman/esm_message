@@ -58,35 +58,30 @@ impl Message {
         }
     }
 
-    pub fn from_bytes<F>(
-        data: Vec<u8>,
-        resource_id: ResourceId,
-        server_key_getter: F,
-    ) -> Result<Message, String>
+    pub fn from_bytes<F>(data: Vec<u8>, server_key_getter: F) -> Result<Message, String>
     where
         F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
     {
-        let mut message = decrypt_message(data, server_key_getter)?;
-        message.resource_id = Some(resource_id.adapter_id() as i64);
+        let message = decrypt_message(data, server_key_getter)?;
 
         Ok(message)
     }
 
-    pub fn set_resource<'a>(&'a mut self, resource_id: ResourceId) -> &'a mut Message {
+    pub fn set_resource(&mut self, resource_id: ResourceId) -> &Message {
         self.resource_id = Some(resource_id.adapter_id() as i64);
         self
     }
 
-    pub fn set_data<'a>(&'a mut self, data: Data) -> &'a mut Message {
+    pub fn set_data(&mut self, data: Data) -> &Message {
         self.data = data;
         self
     }
 
-    pub fn add_error<'a>(
-        &'a mut self,
+    pub fn add_error(
+        &mut self,
         error_type: ErrorType,
         error_message: &'static str,
-    ) -> &'a mut Message {
+    ) -> &Message {
         let error = Error::new(error_type, error_message.into());
         self.errors.push(error);
         self
@@ -98,7 +93,7 @@ impl Message {
     {
         let server_id = match self.server_id.clone() {
             Some(id) => id,
-            None => return Err(format!("Message does not have a server ID")),
+            None => return Err("Message does not have a server ID".into()),
         };
 
         encrypt_message(self, &server_id, server_key_getter)
@@ -119,7 +114,15 @@ pub enum Type {
 pub struct Empty {}
 
 impl Empty {
-    pub fn new() -> Self { Empty {} }
+    pub fn new() -> Self {
+        Empty {}
+    }
+}
+
+impl Default for Empty {
+    fn default() -> Self {
+        Empty::new()
+    }
 }
 
 ////////////////////////////////////////////////////////////
@@ -247,7 +250,7 @@ mod tests {
             price_per_object: 10.0,
             territory_lifetime: 10.0,
             territory_data: "[]".into(),
-            server_start_time: chrono::Utc::now()
+            server_start_time: chrono::Utc::now(),
         };
 
         let expected = server_init.clone();
@@ -255,12 +258,16 @@ mod tests {
         message.set_data(Data::ServerInitialization(server_init));
 
         let server_id = "testing".as_bytes().to_vec();
-        let server_key = "12345678901234567890123456789012345678901234567890".as_bytes().to_vec();
+        let server_key = "12345678901234567890123456789012345678901234567890"
+            .as_bytes()
+            .to_vec();
 
-        let encrypted_bytes = encrypt_message(&message, &server_id, |_| Some(server_key.to_owned()));
+        let encrypted_bytes =
+            encrypt_message(&message, &server_id, |_| Some(server_key.to_owned()));
         assert!(encrypted_bytes.is_ok());
 
-        let decrypted_message = decrypt_message(encrypted_bytes.unwrap(), |_| Some(server_key.to_owned()));
+        let decrypted_message =
+            decrypt_message(encrypted_bytes.unwrap(), |_| Some(server_key.to_owned()));
         assert!(decrypted_message.is_ok());
 
         let decrypted_message = decrypted_message.unwrap();
@@ -270,11 +277,11 @@ mod tests {
         match decrypted_message.data {
             Data::ServerInitialization(data) => {
                 assert_eq!(data.server_name, expected.server_name);
-                assert_eq!(data.price_per_object, expected.price_per_object);
-                assert_eq!(data.territory_lifetime, expected.territory_lifetime);
+                assert_eq!(data.price_per_object as i64, expected.price_per_object as i64);
+                assert_eq!(data.territory_lifetime as i64, expected.territory_lifetime as i64);
                 assert_eq!(data.territory_data, expected.territory_data);
-            },
-            _ => assert!(false, "Invalid message data")
+            }
+            _ => panic!("Invalid message data"),
         }
     }
 }
