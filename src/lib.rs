@@ -10,6 +10,7 @@ use message_io::network::ResourceId;
 pub use metadata::Metadata;
 use rand::random;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /*
     {
@@ -30,7 +31,7 @@ use serde::{Deserialize, Serialize};
 */
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
-    pub id: String,
+    pub id: Uuid,
 
     #[serde(rename = "type")]
     pub message_type: Type,
@@ -48,7 +49,7 @@ pub struct Message {
 impl Message {
     pub fn new(message_type: Type) -> Self {
         Message {
-            id: "".into(),
+            id: Uuid::new_v4(),
             message_type,
             resource_id: None,
             server_id: None,
@@ -169,10 +170,8 @@ where
             rest -> The encrypted json
         ]
     */
-    let mut packet: Vec<u8> = Vec::new();
-
     // Start the packet off with the id length and itself
-    packet.push(server_id.len() as u8);
+    let mut packet: Vec<u8> = vec![server_id.len() as u8];
     packet.extend(&*server_id);
 
     // Append the nonce length and itself to the packet
@@ -271,7 +270,6 @@ mod tests {
         assert!(decrypted_message.is_ok());
 
         let decrypted_message = decrypted_message.unwrap();
-        assert_eq!(decrypted_message.id, "");
         assert_eq!(decrypted_message.message_type, Type::Connect);
 
         match decrypted_message.data {
