@@ -36,14 +36,33 @@ pub struct Message {
     #[serde(rename = "type")]
     pub message_type: Type,
 
+    #[serde(skip)]
+    pub server_id: Option<Vec<u8>>,
+
     // Only used between the server and the bot. Ignored between server/client
     #[serde(skip)]
     resource_id: Option<i64>,
 
-    pub server_id: Option<Vec<u8>>,
+    #[serde(default, skip_serializing_if = "data_is_empty")]
     data: Data,
+
+    #[serde(default, skip_serializing_if = "metadata_is_empty")]
     metadata: Metadata,
+
+    #[serde(default, skip_serializing_if = "errors_is_empty")]
     errors: Vec<Error>,
+}
+
+fn data_is_empty(data: &Data) -> bool {
+    matches!(data, Data::Empty(_))
+}
+
+fn metadata_is_empty(metadata: &Metadata) -> bool {
+    matches!(metadata, Metadata::Empty(_))
+}
+
+fn errors_is_empty(errors: &[Error]) -> bool {
+    errors.is_empty()
 }
 
 impl Message {
@@ -281,5 +300,56 @@ mod tests {
             }
             _ => panic!("Invalid message data"),
         }
+    }
+
+    #[test]
+    fn test_data_is_empty() {
+        let result = data_is_empty(&Data::Empty(Empty::new()));
+        assert!(result);
+
+        let server_init = ServerInitialization {
+            server_name: "server_name".into(),
+            price_per_object: 10.0,
+            territory_lifetime: 10.0,
+            territory_data: "[]".into(),
+            server_start_time: chrono::Utc::now(),
+        };
+
+        let result = data_is_empty(&Data::ServerInitialization(server_init));
+        assert!(!result);
+    }
+
+    #[test]
+    fn test_metadata_is_empty() {
+        let result = metadata_is_empty(&Metadata::Empty(Empty::new()));
+        assert!(result);
+    }
+
+    #[test]
+    fn test_errors_is_empty() {
+        let result = errors_is_empty(&Vec::new());
+        assert!(result);
+
+        let error = Error::new(ErrorType::Code, "1".into());
+        let result = errors_is_empty(&[error]);
+        assert!(!result);
+    }
+
+    #[test]
+    fn test_serializing_empty_message() {
+        let message = Message::new(Type::Connect);
+        let json = serde_json::to_string(&message).unwrap();
+
+        let expected = format!("{{\"id\":\"{}\",\"type\":\"connect\"}}", message.id);
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_deserializing_empty_message() {
+        let uuid = Uuid::new_v4();
+        let input = format!("{{\"id\":\"{}\",\"type\":\"connect\"}}", uuid);
+        let message: Message = serde_json::from_str(&input).unwrap();
+
+        assert_eq!(message.id, uuid);
     }
 }

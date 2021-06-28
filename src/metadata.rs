@@ -5,3 +5,9 @@ use serde::{Deserialize, Serialize};
 pub enum Metadata {
     Empty(crate::Empty)
 }
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata::Empty(crate::Empty::new())
+    }
+}
