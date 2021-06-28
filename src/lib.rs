@@ -235,8 +235,8 @@ where
     let key = Key::from_slice(server_key);
     let cipher = Aes256Gcm::new(key);
 
-    // Decrypt!
-    let message = match cipher.decrypt(nonce, encrypted_bytes.as_ref()) {
+    // Decrypt! This also ensures the message has been encrypted using this server's key.
+    let decrypted_bytes = match cipher.decrypt(nonce, encrypted_bytes.as_ref()) {
         Ok(message) => message,
         Err(e) => {
             return Err(format!("Failed to decrypt. Reason: {}", e));
@@ -244,13 +244,18 @@ where
     };
 
     // And deserialize into a struct
-    match serde_json::from_slice(&message) {
-        Ok(message) => Ok(message),
-        Err(e) => Err(format!(
+    let mut message: Message = match serde_json::from_slice(&decrypted_bytes) {
+        Ok(message) => message,
+        Err(e) => return Err(format!(
             "Failed to deserialize. Reason: {:?}. Message: {:?}",
-            e, message
+            e, decrypted_bytes
         )),
-    }
+    };
+
+    // Store the server id
+    message.server_id = Some(server_id);
+
+    Ok(message)
 }
 
 #[cfg(test)]
@@ -290,6 +295,9 @@ mod tests {
 
         let decrypted_message = decrypted_message.unwrap();
         assert_eq!(decrypted_message.message_type, Type::Connect);
+
+        // Ensure it has a server ID
+        assert!(decrypted_message.server_id.is_some());
 
         match decrypted_message.data {
             Data::ServerInitialization(data) => {
@@ -351,5 +359,8 @@ mod tests {
         let message: Message = serde_json::from_str(&input).unwrap();
 
         assert_eq!(message.id, uuid);
+        assert!(matches!(message.data, Data::Empty(_)));
+        assert!(matches!(message.metadata, Metadata::Empty(_)));
+        assert!(message.errors.is_empty());
     }
 }
