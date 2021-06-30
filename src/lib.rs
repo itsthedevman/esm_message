@@ -36,7 +36,7 @@ pub struct Message {
     #[serde(rename = "type")]
     pub message_type: Type,
 
-    #[serde(skip)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_id: Option<Vec<u8>>,
 
     // Only used between the server and the bot. Ignored between server/client
@@ -308,6 +308,29 @@ mod tests {
             }
             _ => panic!("Invalid message data"),
         }
+    }
+
+    #[test]
+    fn test_it_serializes_with_server_id() {
+        let mut message = Message::new(Type::Connect);
+        message.server_id = Some("some_server_id".as_bytes().to_vec());
+
+        let serialized_message = serde_json::to_string(&message);
+        assert!(serialized_message.is_ok());
+
+        let serialized_message = serialized_message.unwrap();
+        assert_eq!(serialized_message, format!("{{\"id\":\"{}\",\"type\":\"connect\",\"server_id\":[115,111,109,101,95,115,101,114,118,101,114,95,105,100]}}", message.id));
+    }
+
+    #[test]
+    fn test_it_serializes_without_server_id() {
+        let message = Message::new(Type::Connect);
+
+        let serialized_message = serde_json::to_string(&message);
+        assert!(serialized_message.is_ok());
+
+        let serialized_message = serialized_message.unwrap();
+        assert_eq!(serialized_message, format!("{{\"id\":\"{}\",\"type\":\"connect\"}}", message.id));
     }
 
     #[test]
