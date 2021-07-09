@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -5,8 +7,8 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
     Empty(crate::Empty),
-    ServerInitialization(ServerInitialization),
-    ServerPostInitialization(ServerPostInitialization),
+    Init(Init),
+    PostInit(PostInit),
 }
 
 impl Default for Data {
@@ -16,7 +18,7 @@ impl Default for Data {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ServerInitialization {
+pub struct Init {
     pub server_name: String,
     pub price_per_object: f32,
     pub territory_lifetime: f32,
@@ -25,7 +27,7 @@ pub struct ServerInitialization {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ServerPostInitialization {
+pub struct PostInit {
     pub extdb_path: String,
     pub gambling_modifier: i64,
     pub gambling_payout: i64,
@@ -45,8 +47,11 @@ pub struct ServerPostInitialization {
     pub logging_transfer: bool,
     pub logging_upgrade_territory: bool,
     pub max_payment_count: i64,
-    pub server_id: String,
-    pub taxes_territory_payment: i64,
-    pub taxes_territory_upgrade: i64,
+    pub territory_payment_tax: i64,
+    pub territory_upgrade_tax: i64,
     pub territory_admins: Vec<String>,
+    pub reward_player_poptabs: i64,
+    pub reward_locker_poptabs: i64,
+    pub reward_respect: i64,
+    pub reward_items: HashMap<String, i64>, // For now
 }
