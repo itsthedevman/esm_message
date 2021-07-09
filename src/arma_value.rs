@@ -1,10 +1,14 @@
+use std::collections::HashMap;
+
+use chrono::{DateTime, Utc};
+
 // Pulled from https://github.com/BrettMayson/arma-rs/blob/expirement/core/src/to_arma.rs
 // Needed to add more to it
 
 #[macro_export]
 macro_rules! arma_value {
-    // Ruby hash syntax (would've preferred json syntax)
-    ({ $($key:expr => $value:expr),* }) => {{
+    // JSON syntax
+    ({ $($key:tt: $value:expr),* }) => {{
         ArmaValue::HashMap(
             vec![
                 $( ($key.to_arma(), $value.to_arma()) ),*
@@ -14,12 +18,10 @@ macro_rules! arma_value {
 
     // Array
     ([ $($val:expr),* ]) => {
-        ArmaValue::Array(
-            vec![$($val.to_arma()),*]
-        )
+        vec![$($val.to_arma()),*].to_arma()
     };
 
-    // String, number
+    // String, number, boolean
     ($val:literal) => {
         $val.to_arma()
     };
@@ -92,6 +94,16 @@ impl<T: ToArma> ToArma for Vec<T> {
 impl<T: ToArma> ToArma for (T, T) {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::Array(vec![self.0.to_arma(), self.1.to_arma()])
+    }
+}
+
+impl<K: ToArma, V: ToArma> ToArma for HashMap<K, V> {
+    fn to_arma(&self) -> ArmaValue {
+        ArmaValue::HashMap(
+            self.iter()
+                .map(|(k, v)| (k.to_arma(), v.to_arma()))
+                .collect::<Vec<(ArmaValue, ArmaValue)>>(),
+        )
     }
 }
 
@@ -175,6 +187,12 @@ impl ToArma for bool {
     }
 }
 
+impl ToArma for DateTime<Utc> {
+    fn to_arma(&self) -> ArmaValue {
+        self.to_rfc3339().to_arma()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -188,11 +206,17 @@ mod tests {
     #[test]
     fn test_it_converts_hash_map() {
         let vec = vec![
-            (ArmaValue::String("key".into()), ArmaValue::String("value".into())),
-            (ArmaValue::String("key2".into()), ArmaValue::Boolean(true))
+            (
+                ArmaValue::String("key".into()),
+                ArmaValue::String("value".into()),
+            ),
+            (ArmaValue::String("key2".into()), ArmaValue::Boolean(true)),
         ];
 
-        assert_eq!(format!("{}", ArmaValue::HashMap(vec)), r#"[[""key"", ""value""], [""key2"", true]]"#);
+        assert_eq!(
+            format!("{}", ArmaValue::HashMap(vec)),
+            r#"[[""key"", ""value""], [""key2"", true]]"#
+        );
     }
 
     #[test]
@@ -200,11 +224,11 @@ mod tests {
         // Hashmap
         let int = 55;
         let result = arma_value!({
-            "string" => "world",
-            "int" => int,
-            "bool" => false,
-            "array" => vec![1, 2, 3],
-            "hash" => arma_value!({ "true" => true, "false" => false })
+            "string": "world",
+            "int": int,
+            "bool": false,
+            "array": vec![1, 2, 3],
+            "hash": arma_value!({ "true": true, "false": false })
         });
 
         assert_eq!(
@@ -213,7 +237,14 @@ mod tests {
         );
 
         // Array
-        let result = arma_value!(["string", int, false, vec![1,2,3], arma_value!({ "true" => true, "false" => false })]);
+        let result = arma_value!([
+            "string",
+            int,
+            false,
+            vec![1, 2, 3],
+            arma_value!({ "true": true, "false": false })
+        ]);
+
         assert_eq!(
             result.to_string(),
             r#"[""string"", 55, false, [1, 2, 3], [[""true"", true], [""false"", false]]]"#

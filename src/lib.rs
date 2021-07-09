@@ -1,6 +1,9 @@
 pub mod data;
 pub mod error;
 pub mod metadata;
+pub mod arma_value;
+
+use std::collections::HashMap;
 
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
@@ -11,6 +14,7 @@ pub use metadata::Metadata;
 use rand::random;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+pub use arma_value::{ArmaValue, ToArma};
 
 /*
     {
@@ -41,16 +45,16 @@ pub struct Message {
 
     // Only used between the server and the bot. Ignored between server/client
     #[serde(skip)]
-    resource_id: Option<i64>,
+    pub resource_id: Option<i64>,
 
     #[serde(default, skip_serializing_if = "data_is_empty")]
-    data: Data,
+    pub data: Data,
 
     #[serde(default, skip_serializing_if = "metadata_is_empty")]
-    metadata: Metadata,
+    pub metadata: Metadata,
 
     #[serde(default, skip_serializing_if = "errors_is_empty")]
-    errors: Vec<Error>,
+    pub errors: Vec<Error>,
 }
 
 fn data_is_empty(data: &Data) -> bool {
@@ -118,16 +122,29 @@ impl Message {
 
         encrypt_message(self, &server_id, server_key_getter)
     }
+
+    pub fn to_hash_map(&self) -> HashMap<String, ArmaValue> {
+        let mut hash_map: HashMap<String, ArmaValue> = HashMap::new();
+        hash_map.insert("id".into(), self.id.to_string().to_arma());
+        hash_map.insert("data".into(), self.data.to_arma());
+        // hash_map.insert("metadata".into(), self.metadata.to_arma());
+
+        hash_map
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum Type {
+    // System message types
     Connect,
     Disconnect,
-    UpdateKeys,
     Ping,
     Pong,
+
+    // Client message types
+    Init,
+    PostInit,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -247,8 +264,8 @@ where
     let mut message: Message = match serde_json::from_slice(&decrypted_bytes) {
         Ok(message) => message,
         Err(e) => return Err(format!(
-            "Failed to deserialize. Reason: {:?}. Message: {:?}",
-            e, decrypted_bytes
+            "Failed to deserialize. Reason: {:?}. Message: {:#?}",
+            e, String::from_utf8(decrypted_bytes.clone()).unwrap_or(format!("Bytes: {:?}", decrypted_bytes))
         )),
     };
 
@@ -260,7 +277,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::data::ServerInitialization;
+    use crate::data::Init;
 
     use super::*;
 
@@ -268,7 +285,7 @@ mod tests {
     fn encrypt_and_decrypt_message() {
         let mut message = Message::new(Type::Connect);
 
-        let server_init = ServerInitialization {
+        let server_init = Init {
             server_name: "server_name".into(),
             price_per_object: 10.0,
             territory_lifetime: 10.0,
@@ -278,7 +295,7 @@ mod tests {
 
         let expected = server_init.clone();
 
-        message.set_data(Data::ServerInitialization(server_init));
+        message.set_data(Data::Init(server_init));
 
         let server_id = "testing".as_bytes().to_vec();
         let server_key = "12345678901234567890123456789012345678901234567890"
@@ -300,7 +317,7 @@ mod tests {
         assert!(decrypted_message.server_id.is_some());
 
         match decrypted_message.data {
-            Data::ServerInitialization(data) => {
+            Data::Init(data) => {
                 assert_eq!(data.server_name, expected.server_name);
                 assert_eq!(data.price_per_object as i64, expected.price_per_object as i64);
                 assert_eq!(data.territory_lifetime as i64, expected.territory_lifetime as i64);
@@ -338,7 +355,7 @@ mod tests {
         let result = data_is_empty(&Data::Empty(Empty::new()));
         assert!(result);
 
-        let server_init = ServerInitialization {
+        let server_init = Init {
             server_name: "server_name".into(),
             price_per_object: 10.0,
             territory_lifetime: 10.0,
@@ -346,7 +363,7 @@ mod tests {
             server_start_time: chrono::Utc::now(),
         };
 
-        let result = data_is_empty(&Data::ServerInitialization(server_init));
+        let result = data_is_empty(&Data::Init(server_init));
         assert!(!result);
     }
 
