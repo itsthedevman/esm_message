@@ -5,31 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ArmaValue, ToArma, arma_value};
 
-// macro_rules! data_struct {
-//     ($struct:ident, { $($field_name:item: $field_type:ty),* }) => {
-//         #[derive(Serialize, Deserialize, Debug, Clone)]
-//         pub struct $struct {
-//             $(
-//                 pub $field_name: $field_type
-//             )*
-//         }
-
-//         impl ToArma for $struct {
-//             fn to_arma(&self) -> ArmaValue {
-//                 arma_value!({
-//                     $(
-//                         $field_name: self.$field_name
-//                     ),*
-//                 })
-//             }
-//         }
-//     }
-// }
-
-// data_struct!(Test, {
-//     foo: String
-// });
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
