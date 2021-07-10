@@ -112,6 +112,7 @@ impl ToArma for String {
         ArmaValue::String(self.to_string())
     }
 }
+
 impl ToArma for &'static str {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::String(self.to_string())
@@ -123,21 +124,25 @@ impl ToArma for u8 {
         ArmaValue::Number(self.to_owned() as f32)
     }
 }
+
 impl ToArma for u16 {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::Number(self.to_owned() as f32)
     }
 }
+
 impl ToArma for u32 {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::Number(self.to_owned() as f32)
     }
 }
+
 impl ToArma for u64 {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::Number(self.to_owned() as f32)
     }
 }
+
 impl ToArma for u128 {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::Number(self.to_owned() as f32)
@@ -149,21 +154,25 @@ impl ToArma for i8 {
         ArmaValue::Number(self.to_owned() as f32)
     }
 }
+
 impl ToArma for i16 {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::Number(self.to_owned() as f32)
     }
 }
+
 impl ToArma for i32 {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::Number(self.to_owned() as f32)
     }
 }
+
 impl ToArma for i64 {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::Number(self.to_owned() as f32)
     }
 }
+
 impl ToArma for i128 {
     fn to_arma(&self) -> ArmaValue {
         ArmaValue::Number(self.to_owned() as f32)
