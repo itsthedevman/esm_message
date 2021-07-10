@@ -1,7 +1,6 @@
 pub mod data;
 pub mod error;
 pub mod metadata;
-pub mod arma_value;
 
 use std::collections::HashMap;
 
@@ -14,7 +13,7 @@ pub use metadata::Metadata;
 use rand::random;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-pub use arma_value::{ArmaValue, ToArma};
+use arma_rs::{ArmaValue, ToArma};
 
 /*
     {

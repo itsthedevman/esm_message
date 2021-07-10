@@ -1,9 +1,23 @@
 use std::collections::HashMap;
 
+use arma_rs::{ArmaValue, ToArma, arma_value};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::{ArmaValue, ToArma, arma_value};
+/// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
+/// Usage:
+///     retrieve_data!(&message, Init)
+#[macro_export]
+macro_rules! retrieve_data {
+    ($message:expr, $data_type:ident) => {{
+        let data = match &$message.data {
+            Data::$data_type(ref v) => v,
+            data => panic!("Unexpected data type {:?}. Expected: {}.", data, stringify!($data_type))
+        };
+
+        data
+    }};
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
@@ -72,10 +86,11 @@ pub struct PostInit {
     pub territory_payment_tax: i64,
     pub territory_upgrade_tax: i64,
     pub territory_admins: Vec<String>,
-    pub reward_player_poptabs: i64,
-    pub reward_locker_poptabs: i64,
-    pub reward_respect: i64,
-    pub reward_items: HashMap<String, i64>, // For now
+    // For now
+    // pub reward_player_poptabs: i64,
+    // pub reward_locker_poptabs: i64,
+    // pub reward_respect: i64,
+    // pub reward_items: HashMap<String, i64>,
 }
 
 impl ToArma for PostInit {
@@ -102,11 +117,7 @@ impl ToArma for PostInit {
             "max_payment_count": self.max_payment_count,
             "territory_payment_tax": self.territory_payment_tax,
             "territory_upgrade_tax": self.territory_upgrade_tax,
-            "territory_admins": self.territory_admins,
-            "reward_player_poptabs": self.reward_player_poptabs,
-            "reward_locker_poptabs": self.reward_locker_poptabs,
-            "reward_respect": self.reward_respect,
-            "reward_items": self.reward_items
+            "territory_admins": self.territory_admins
         })
     }
 }
