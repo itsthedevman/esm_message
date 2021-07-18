@@ -123,8 +123,8 @@ impl ToArma for PostInit {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Event {
-    event_type: String,
-    triggered_at: DateTime<Utc>
+    pub event_type: String,
+    pub triggered_at: DateTime<Utc>
 }
 
 impl ToArma for Event {
