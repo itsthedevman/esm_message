@@ -23,6 +23,7 @@ pub enum Data {
     Empty(crate::Empty),
     Init(Init),
     PostInit(PostInit),
+    Event(Event),
 }
 
 impl Default for Data {
@@ -116,6 +117,21 @@ impl ToArma for PostInit {
             "territory_payment_tax": self.territory_payment_tax,
             "territory_upgrade_tax": self.territory_upgrade_tax,
             "territory_admins": self.territory_admins
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Event {
+    event_type: String,
+    triggered_at: DateTime<Utc>
+}
+
+impl ToArma for Event {
+    fn to_arma(&self) -> ArmaValue {
+        arma_value!({
+            "event_type": self.event_type,
+            "triggered_at": self.triggered_at
         })
     }
 }

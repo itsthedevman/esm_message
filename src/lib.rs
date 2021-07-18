@@ -144,6 +144,7 @@ pub enum Type {
     // Client message types
     Init,
     PostInit,
+    Event,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
