@@ -349,11 +349,13 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         }
     };
 
+    // Convert the hashmap to json syntax
     // This allows [[key, value]] and [] since an empty hashmap is just []
     let input_content = match input_content {
         ArmaValue::Array(a) => {
             if a.is_empty() {
-                String::new()
+                // Since the data and metadata params are always a hashmap, we can treat empty arrays as them too.
+                String::from("{}")
             } else {
                 return Err(format!("Failed to retrieve hashmap from {:?}", a));
             }
@@ -582,9 +584,7 @@ mod tests {
             foo: "testing".into(),
         });
 
-        expectation.metadata = Metadata::Test(metadata::Test {
-            foo: "gnitset".into(),
-        });
+        expectation.metadata = Metadata::Empty(Empty {});
 
         expectation.add_error(ErrorType::Code, "error_message");
         expectation.add_error(ErrorType::Message, "This is a message");
@@ -593,7 +593,7 @@ mod tests {
             Type::Event,
             id.to_string(),
             arma_value!([arma_value!("test"), arma_value!({ "foo": "testing" })]),
-            arma_value!([arma_value!("test"), arma_value!({ "foo": "gnitset" })]),
+            arma_value!([arma_value!("empty"), arma_value!([])]),
             arma_value!({ "code": arma_value!(["error_message"]), "message": arma_value!(["This is a message"])})
         ).unwrap();
 
