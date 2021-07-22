@@ -2,13 +2,16 @@ pub mod data;
 pub mod error;
 pub mod metadata;
 
+use std::collections::HashMap;
+
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use aes_gcm::aead::{Aead, NewAead};
-use arma_rs::{ArmaValue, ToArma};
+use arma_rs::{ArmaValue};
 use message_io::network::ResourceId;
 use rand::random;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use serde_json::json;
 use uuid::Uuid;
 
 pub use data::*;
@@ -81,6 +84,21 @@ impl Message {
         }
     }
 
+    pub fn set_resource(&mut self, resource_id: ResourceId) -> &Message {
+        self.resource_id = Some(resource_id.adapter_id() as i64);
+        self
+    }
+
+    pub fn add_error<S>(
+        &mut self,
+        error_type: ErrorType,
+        error_message: S,
+    ) -> &Message where S: Into<String> {
+        let error = Error::new(error_type, error_message.into());
+        self.errors.push(error);
+        self
+    }
+
     pub fn from_bytes<F>(data: Vec<u8>, server_key_getter: F) -> Result<Message, String>
     where
         F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
@@ -90,25 +108,6 @@ impl Message {
         Ok(message)
     }
 
-    pub fn set_resource(&mut self, resource_id: ResourceId) -> &Message {
-        self.resource_id = Some(resource_id.adapter_id() as i64);
-        self
-    }
-
-    pub fn set_data(&mut self, data: Data) -> &Message {
-        self.data = data;
-        self
-    }
-
-    pub fn add_error(
-        &mut self,
-        error_type: ErrorType,
-        error_message: &'static str,
-    ) -> &Message {
-        let error = Error::new(error_type, error_message.into());
-        self.errors.push(error);
-        self
-    }
 
     pub fn as_bytes<F>(&self, server_key_getter: F) -> Result<Vec<u8>, String>
     where
@@ -122,13 +121,50 @@ impl Message {
         encrypt_message(self, &server_id, server_key_getter)
     }
 
-    pub fn to_hash_map(&self) -> HashMap<String, ArmaValue> {
-        let mut hash_map: HashMap<String, ArmaValue> = HashMap::new();
-        hash_map.insert("id".into(), self.id.to_string().to_arma());
-        hash_map.insert("data".into(), self.data.to_arma());
-        // hash_map.insert("metadata".into(), self.metadata.to_arma());
+    //  [
+    //      "id",
+    //      [
+    //          "data_type",
+    //          [["key", "value"], ["key", 2]]
+    //      ],
+    //      [
+    //          "metadata_type",
+    //          [["key", "value"], ["key", true]]
+    //      ],
+    //      [["code", []], ["message", []]]
+    //  ]
+    pub fn from_arma(message_type: Type, id: String, data: ArmaValue, metadata: ArmaValue, errors: ArmaValue) -> Result<Self, String> {
+        let data: Data = match data_from_arma_value(&data) {
+            Ok(v) => v,
+            Err(e) => return Err(e)
+        };
 
-        hash_map
+        let metadata: Metadata = match data_from_arma_value(&metadata) {
+            Ok(v) => v,
+            Err(e) => return Err(e)
+        };
+
+        // Build the message
+        let mut message = Self::new(message_type);
+        message.id = match Uuid::parse_str(&id) {
+            Ok(uuid) => uuid,
+            Err(e) => return Err(format!("Failed to extract ID from {:?}. {}", id, e))
+        };
+
+        message.data = data;
+        message.metadata = metadata;
+
+        // Add the errors. They have to be converted differently
+        match add_errors_to_message(&errors, &mut message) {
+            Ok(_) => Ok(message),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+impl std::fmt::Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -147,7 +183,7 @@ pub enum Type {
     Event,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Empty {}
 
 impl Empty {
@@ -164,6 +200,7 @@ impl Default for Empty {
 
 ////////////////////////////////////////////////////////////
 
+#[allow(clippy::ptr_arg)]
 fn encrypt_message<F>(
     message: &Message,
     server_id: &Vec<u8>,
@@ -275,10 +312,99 @@ where
     Ok(message)
 }
 
+fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, String> {
+    let input = match input.as_vec() {
+        Some(v) => v,
+        None => return Err(format!("Failed to extract vec from {:?}", input)),
+    };
+
+    let input_type = match input.get(0) {
+        Some(v) => match v.as_str() {
+            Some(v) => v,
+            None => return Err(format!("Failed to extract string from {:?}", v)),
+        },
+        None => return Err(format!("Failed to retrieve item at index 0 from {:?}", input)),
+    };
+
+    // Extract the hashmap out but keep it as ArmaValue.
+    let input_content = match input.get(1) {
+        Some(v) => match v.as_hashmap() {
+            Some(v) => {
+                format!(
+                    "{{{}}}",
+                    v.iter()
+                    .map(|(k, v)| format!("{}: {}", k.to_string(), v.to_string()))
+                    .collect::<Vec<String>>()
+                    .join(",")
+                )
+            },
+            None => return Err(format!("Failed to extract hashmap from {:?}", v)),
+        }
+        None => return Err(format!("Failed to retrieve item at index 1 from {:?}", input)),
+    };
+
+    let json = format!(r#"
+        {{
+            "type": "{}",
+            "content": {}
+        }}"#,
+        input_type,
+        input_content
+    );
+
+    let output: T = match serde_json::from_str(&json) {
+        Ok(t) => t,
+        Err(e) => return Err(format!("Failed to parse {:?}. Reason: {:?}", json, e)),
+    };
+
+    Ok(output)
+}
+
+fn add_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(), String> {
+    // Convert to hashmap
+    let errors = match input.as_hashmap() {
+        Some(h) => h,
+        None => return Err(format!("Failed to extract hashmap from {:?}", input)),
+    };
+
+    // Process "code" and "message" types
+    for (error_type, entries) in errors {
+        let error_type = match error_type.as_str() {
+            Some(s) => match s {
+                "code" => ErrorType::Code,
+                "message" => ErrorType::Message,
+                _ => return Err(format!("The provided error type is invalid. {:?} is not \"code\" or \"message\"", s)),
+            },
+            None => return Err(format!("Failed to extract string from {:?}", error_type)),
+        };
+
+        let entries = match entries.as_vec() {
+            Some(s) => s,
+            None => return Err(format!("Failed to extract hashmap from {:?}", entries)),
+        };
+
+        for entry in entries {
+            // Own so ArmaValue doesn't have to be 'static
+            let entry = match entry.as_str() {
+                Some(s) => s.to_owned(),
+                None => return Err(format!("Failed to extract string from {:?}", entry)),
+            };
+
+            // Finally, add the error to the message
+            message.add_error(error_type.clone(), entry);
+        }
+    }
+
+    println!("{:?}", message);
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::data::Init;
+    use arma_rs::{arma_value, ToArma};
 
+    use crate::data::Init;
     use super::*;
 
     #[test]
@@ -295,7 +421,7 @@ mod tests {
 
         let expected = server_init.clone();
 
-        message.set_data(Data::Init(server_init));
+        message.data = Data::Init(server_init);
 
         let server_id = "testing".as_bytes().to_vec();
         let server_key = "12345678901234567890123456789012345678901234567890"
@@ -402,5 +528,44 @@ mod tests {
         assert!(matches!(message.data, Data::Empty(_)));
         assert!(matches!(message.metadata, Metadata::Empty(_)));
         assert!(message.errors.is_empty());
+    }
+
+    #[test]
+    fn test_from_str() {
+        use data::{Data};
+
+        let id = Uuid::new_v4();
+
+        let mut expectation = Message::new(Type::Event);
+        expectation.id = id;
+        expectation.data = Data::Test(data::Test {
+            foo: "testing".into()
+        });
+
+        expectation.metadata = Metadata::Test(metadata::Test {
+            foo: "gnitset".into(),
+        });
+
+        expectation.add_error(ErrorType::Code, "error_message");
+        expectation.add_error(ErrorType::Message, "This is a message");
+
+        let mut result = Message::from_arma(
+            Type::Event,
+            id.to_string(),
+            arma_value!([arma_value!("test"), arma_value!({ "foo": "testing" })]),
+            arma_value!([arma_value!("test"), arma_value!({ "foo": "gnitset" })]),
+            arma_value!({ "code": arma_value!(["error_message"]), "message": arma_value!(["This is a message"])})
+        ).unwrap();
+
+        assert_eq!(result.id, expectation.id);
+        assert_eq!(result.data, expectation.data);
+        assert_eq!(result.metadata, expectation.metadata);
+
+        // Ensure they're in order
+        result.errors.sort_by(|a, b| a.error_type.cmp(&b.error_type));
+        expectation.errors.sort_by(|a, b| a.error_type.cmp(&b.error_type));
+
+        assert_eq!(result.errors, expectation.errors);
+
     }
 }

@@ -17,10 +17,11 @@ macro_rules! retrieve_data {
     }};
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
     Empty(crate::Empty),
+    Test(Test),
     Init(Init),
     PostInit(PostInit),
     Event(Event),
@@ -41,7 +42,19 @@ impl ToArma for Data {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Test {
+    pub foo: String
+}
+
+impl ToArma for Test {
+    fn to_arma(&self) -> ArmaValue {
+        arma_value!({ "foo": self.foo })
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Init {
     pub server_name: String,
     pub price_per_object: f32,
@@ -61,7 +74,7 @@ impl ToArma for Init {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct PostInit {
     pub extdb_path: String,
     pub gambling_modifier: i64,
@@ -121,7 +134,7 @@ impl ToArma for PostInit {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Event {
     pub event_type: String,
     pub triggered_at: DateTime<Utc>

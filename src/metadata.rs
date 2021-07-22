@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
 use arma_rs::{ArmaValue, ToArma, arma_value};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Metadata {
-    Empty(crate::Empty)
+    Empty(crate::Empty),
+    Test(Test),
 }
 
 impl Default for Metadata {
@@ -19,5 +20,16 @@ impl ToArma for Metadata {
             Metadata::Empty(_) => arma_value!({}),
             md => md.to_arma()
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Test {
+    pub foo: String
+}
+
+impl ToArma for Test {
+    fn to_arma(&self) -> ArmaValue {
+        arma_value!({ "foo": self.foo })
     }
 }

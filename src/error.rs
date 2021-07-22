@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Error {
     // Controls how the error_message is treated
     #[serde(rename = "type")]
-    error_type: ErrorType,
+    pub error_type: ErrorType,
 
     #[serde(rename = "message")]
-    error_message: String,
+    pub error_message: String,
 }
 
 impl Error {
@@ -16,7 +16,7 @@ impl Error {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ErrorType {
     // Treats the error_message as a locale error code.
     Code,
