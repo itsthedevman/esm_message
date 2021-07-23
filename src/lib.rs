@@ -321,66 +321,85 @@ where
 }
 
 fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, String> {
-    let input = match input.as_vec() {
-        Some(v) => v,
-        None => return Err(format!("Failed to extract vec from {:?}", input)),
-    };
-
-    let input_type = match input.get(0) {
-        Some(v) => match v.as_str() {
+    let input =
+        match input.as_vec() {
             Some(v) => v,
-            None => return Err(format!("Failed to extract string from {:?}", v)),
-        },
-        None => {
-            return Err(format!(
-                "Failed to retrieve item at index 0 from {:?}",
-                input
-            ))
-        }
-    };
+            None => return Err(format!("Failed to extract vec from {:?}", input)),
+        };
 
-    let input_content = match input.get(1) {
-        Some(v) => v,
-        None => {
-            return Err(format!(
-                "Failed to retrieve item at index 1 from {:?}",
-                input
-            ))
-        }
-    };
-
-    // Convert the hashmap to json syntax
-    // This allows [[key, value]] and [] since an empty hashmap is just []
-    let input_content = match input_content {
-        ArmaValue::Array(a) => {
-            if a.is_empty() {
-                // Since the data and metadata params are always a hashmap, we can treat empty arrays as them too.
-                String::from("{}")
-            } else {
-                return Err(format!("Failed to retrieve hashmap from {:?}", a));
+    let input_type =
+        match input.get(0) {
+            Some(v) => match v.as_str() {
+                Some(v) => v,
+                None => return Err(format!("Failed to extract string from {:?}", v)),
+            },
+            None => {
+                return Err(format!(
+                    "Failed to retrieve item at index 0 from {:?}",
+                    input
+                ))
             }
-        }
-        ArmaValue::HashMap(h) => {
-            format!(
-                "{{{}}}",
-                h.iter()
-                    .map(|(k, v)| format!("{}: {}", k.to_string(), v.to_string()))
-                    .collect::<Vec<String>>()
-                    .join(",")
-            )
-        }
-        _ => {
-            return Err(format!(
-                "Failed to retrieve hashmap from {:?}",
-                input_content
-            ))
-        }
-    };
+        };
 
-    // Convert to JSON, this allows us to deserialize it as an actual type.
+    let input_content =
+        match input.get(1) {
+            Some(v) => v,
+            None => {
+                return Err(format!(
+                    "Failed to retrieve item at index 1 from {:?}",
+                    input
+                ))
+            }
+        };
+
+    let input_content =
+        match input_content.as_vec() {
+            Some(v) => v,
+            None => {
+                return Err(format!(
+                    "Failed to retrieve hashmap from {:?}",
+                    input_content
+                ))
+            },
+        };
+
+    // This allows [[key, value]] and [] since an empty hashmap is just []
+    let json_content =
+        if input_content.is_empty() {
+            // Since the data and metadata params are always a hashmap, we can treat empty arrays as them too.
+            String::from("{}")
+        } else {
+            let mut attributes: Vec<String> = Vec::new();
+
+            for arma_value in input_content {
+                let pair = match arma_value.as_vec() {
+                    Some(v) => v,
+                    None => return Err(format!("Failed to extract vec from {:?}", arma_value)),
+                };
+
+                // Make sure it's a pair
+                if pair.len() != 2 { return Err(format!("{:?} must only contain two elements", pair)); }
+
+                let key = pair.get(0).unwrap();
+                let value = pair.get(1).unwrap();
+
+                // Make sure the key is a string.
+                let key = match key.as_str() {
+                    Some(s) => s,
+                    None => return Err(format!("The first item (the key) of {:?} can only be a string", pair))
+                };
+
+                attributes.push(format!("\"{}\": {}", key, value));
+            }
+
+            // Build the Data JSON
+            format!("{{ {} }}", attributes.join(","))
+        };
+
+    // Convert to JSON, this allows us to deserialize it as an actual type
     let json = format!(
         r#"{{ "type": "{}", "content": {} }}"#,
-        input_type, input_content
+        input_type, json_content
     );
 
     let output: T = match serde_json::from_str(&json) {
@@ -592,7 +611,7 @@ mod tests {
         let mut result = Message::from_arma(
             Type::Event,
             id.to_string(),
-            arma_value!([arma_value!("test"), arma_value!({ "foo": "testing" })]),
+            arma_value!([arma_value!("test"), arma_value!([arma_value!(["foo", "testing"])])]),
             arma_value!([arma_value!("empty"), arma_value!([])]),
             arma_value!({ "code": arma_value!(["error_message"]), "message": arma_value!(["This is a message"])})
         ).unwrap();
