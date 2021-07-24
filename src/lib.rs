@@ -60,11 +60,11 @@ pub struct Message {
 }
 
 fn data_is_empty(data: &Data) -> bool {
-    matches!(data, Data::Empty(_))
+    matches!(data, Data::Empty)
 }
 
 fn metadata_is_empty(metadata: &Metadata) -> bool {
-    matches!(metadata, Metadata::Empty(_))
+    matches!(metadata, Metadata::Empty)
 }
 
 fn errors_is_empty(errors: &[Error]) -> bool {
@@ -78,8 +78,8 @@ impl Message {
             message_type,
             resource_id: None,
             server_id: None,
-            data: Data::Empty(Empty::new()),
-            metadata: Metadata::Empty(Empty::new()),
+            data: Data::Empty,
+            metadata: Metadata::Empty,
             errors: Vec::new(),
         }
     }
@@ -185,21 +185,6 @@ pub enum Type {
     Init,
     PostInit,
     Event,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Empty {}
-
-impl Empty {
-    pub fn new() -> Self {
-        Empty {}
-    }
-}
-
-impl Default for Empty {
-    fn default() -> Self {
-        Empty::new()
-    }
 }
 
 ////////////////////////////////////////////////////////////
@@ -366,8 +351,8 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
     // This allows [[key, value]] and [] since an empty hashmap is just []
     let json_content =
         if input_content.is_empty() {
-            // Since the data and metadata params are always a hashmap, we can treat empty arrays as them too.
-            String::from("{}")
+            // This will deserialize as a unit enum
+            String::from("null")
         } else {
             let mut attributes: Vec<String> = Vec::new();
 
@@ -539,7 +524,7 @@ mod tests {
 
     #[test]
     fn test_data_is_empty() {
-        let result = data_is_empty(&Data::Empty(Empty::new()));
+        let result = data_is_empty(&Data::Empty);
         assert!(result);
 
         let server_init = Init {
@@ -556,7 +541,7 @@ mod tests {
 
     #[test]
     fn test_metadata_is_empty() {
-        let result = metadata_is_empty(&Metadata::Empty(Empty::new()));
+        let result = metadata_is_empty(&Metadata::Empty);
         assert!(result);
     }
 
@@ -586,8 +571,8 @@ mod tests {
         let message: Message = serde_json::from_str(&input).unwrap();
 
         assert_eq!(message.id, uuid);
-        assert!(matches!(message.data, Data::Empty(_)));
-        assert!(matches!(message.metadata, Metadata::Empty(_)));
+        assert!(matches!(message.data, Data::Empty));
+        assert!(matches!(message.metadata, Metadata::Empty));
         assert!(message.errors.is_empty());
     }
 
@@ -603,7 +588,7 @@ mod tests {
             foo: "testing".into(),
         });
 
-        expectation.metadata = Metadata::Empty(Empty {});
+        expectation.metadata = Metadata::Empty;
 
         expectation.add_error(ErrorType::Code, "error_message");
         expectation.add_error(ErrorType::Message, "This is a message");

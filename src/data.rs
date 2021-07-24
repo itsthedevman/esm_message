@@ -20,23 +20,23 @@ macro_rules! retrieve_data {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
-    Empty(crate::Empty),
+    Ack,
+    Empty,
     Test(Test),
     Init(Init),
     PostInit(PostInit),
-    Event(Event),
 }
 
 impl Default for Data {
     fn default() -> Self {
-        Data::Empty(crate::Empty::new())
+        Data::Empty
     }
 }
 
 impl ToArma for Data {
     fn to_arma(&self) -> ArmaValue {
         match self {
-            Data::Empty(_) => arma_value!({}),
+            Data::Empty => arma_value!({}),
             d => d.to_arma()
         }
     }
