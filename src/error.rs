@@ -6,13 +6,13 @@ pub struct Error {
     #[serde(rename = "type")]
     pub error_type: ErrorType,
 
-    #[serde(rename = "message")]
-    pub error_message: String,
+    #[serde(rename = "content")]
+    pub error_content: String,
 }
 
 impl Error {
-    pub fn new(error_type: ErrorType, error_message: String) -> Self {
-        Error { error_type, error_message }
+    pub fn new(error_type: ErrorType, error_content: String) -> Self {
+        Error { error_type, error_content }
     }
 }
 

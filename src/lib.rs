@@ -180,6 +180,7 @@ pub enum Type {
     Disconnect,
     Ping,
     Pong,
+    Test,
 
     // Client message types
     Init,
