@@ -17,6 +17,7 @@ impl Error {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "snake_case")]
 pub enum ErrorType {
     // Treats the error_message as a locale error code.
     Code,
