@@ -20,7 +20,6 @@ macro_rules! retrieve_data {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
-    Ack,
     Empty,
     Test(Test),
     Init(Init),
