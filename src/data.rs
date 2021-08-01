@@ -59,8 +59,11 @@ pub struct Init {
     pub price_per_object: f32,
     pub territory_lifetime: f32,
     pub territory_data: String,
-    pub server_start_time: DateTime<Utc>
+    pub server_start_time: DateTime<Utc>,
+    pub extension_version: String,
 }
+
+// TODO: Create derive for ToArma so this isn't needed
 impl ToArma for Init {
     fn to_arma(&self) -> ArmaValue {
         arma_value!({
@@ -68,7 +71,8 @@ impl ToArma for Init {
             "price_per_object": self.price_per_object,
             "territory_lifetime": self.territory_lifetime,
             "territory_data": self.territory_data,
-            "server_start_time": self.server_start_time
+            "server_start_time": self.server_start_time,
+            "extension_version": self.extension_version,
         })
     }
 }
