@@ -72,7 +72,7 @@ impl ToArma for Init {
             "territory_lifetime": self.territory_lifetime,
             "territory_data": self.territory_data,
             "server_start_time": self.server_start_time,
-            "extension_version": self.extension_version,
+            "extension_version": self.extension_version
         })
     }
 }
