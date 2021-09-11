@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[macro_export]
 macro_rules! retrieve_data {
     ($message:expr, $data_type:ident) => {{
-        let data = match $message.data {
+        let data = match &$message.data {
             esm_message::Data::$data_type(ref v) => v,
             data => panic!("Unexpected data type {:?}. Expected: {}.", data, stringify!($data_type))
         };
