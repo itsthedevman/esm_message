@@ -455,6 +455,7 @@ mod tests {
             territory_lifetime: 10.0,
             territory_data: "[]".into(),
             server_start_time: chrono::Utc::now(),
+            extension_version: "2.0.0".into(),
         };
 
         let expected = server_init.clone();
@@ -534,6 +535,7 @@ mod tests {
             territory_lifetime: 10.0,
             territory_data: "[]".into(),
             server_start_time: chrono::Utc::now(),
+            extension_version: "2.0.0".into(),
         };
 
         let result = data_is_empty(&Data::Init(server_init));
