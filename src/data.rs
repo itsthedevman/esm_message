@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[macro_export]
 macro_rules! retrieve_data {
     ($message:expr, $data_type:ident) => {{
-        let data = match $message.data {
+        let data = match &$message.data {
             Data::$data_type(v) => v.clone(),
             data => panic!("Unexpected data type {:?}. Expected: {}.", data, stringify!($data_type))
         };
@@ -201,7 +201,7 @@ mod tests {
         let mut message = Message::new(Type::Test);
         message.data = Data::Test(data::Test { foo: "testing".into() });
 
-        let result = retrieve_data!(message, Test);
+        let result = retrieve_data!(&message, Test);
         assert_eq!(result.foo, String::from("testing"))
     }
 }
