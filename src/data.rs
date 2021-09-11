@@ -26,7 +26,7 @@ macro_rules! retrieve_data {
 macro_rules! retrieve_data_mut {
     ($message:expr, $data_type:ident) => {{
         let data = match &$message.data {
-            esm_message::Data::$data_type(mut ref v) => v,
+            esm_message::Data::$data_type(ref mut v) => v,
             data => panic!("Unexpected data type {:?}. Expected: {}.", data, stringify!($data_type))
         };
 
