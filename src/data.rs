@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 #[macro_export]
 macro_rules! retrieve_data {
     ($message:expr, $data_type:ident) => {{
-        let data = match &$message.data {
-            esm_message::Data::$data_type(ref v) => v,
+        let data = match $message.data {
+            Data::$data_type(v) => v,
             data => panic!("Unexpected data type {:?}. Expected: {}.", data, stringify!($data_type))
         };
 
@@ -19,20 +19,7 @@ macro_rules! retrieve_data {
     }};
 }
 
-/// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
-/// Usage:
-///     retrieve_data_mut!(&message, Init)
-#[macro_export]
-macro_rules! retrieve_data_mut {
-    ($message:expr, $data_type:ident) => {{
-        let data = match &$message.data {
-            esm_message::Data::$data_type(ref mut v) => v,
-            data => panic!("Unexpected data type {:?}. Expected: {}.", data, stringify!($data_type))
-        };
 
-        data
-    }};
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
@@ -200,5 +187,21 @@ impl ToArma for Query {
             "name": self.name,
             "arguments": self.arguments
         })
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Message, Type, data};
+
+    #[test]
+    fn test_retrieve_data() {
+        let mut message = Message::new(Type::Test);
+        message.data = Data::Test(data::Test { foo: "testing".into() });
+
+        let result = retrieve_data!(message, Test);
+        assert_eq!(result.foo, String::from("testing"))
     }
 }
