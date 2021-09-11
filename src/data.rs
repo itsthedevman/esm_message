@@ -19,6 +19,21 @@ macro_rules! retrieve_data {
     }};
 }
 
+/// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
+/// Usage:
+///     retrieve_data_mut!(&message, Init)
+#[macro_export]
+macro_rules! retrieve_data_mut {
+    ($message:expr, $data_type:ident) => {{
+        let data = match &$message.data {
+            esm_message::Data::$data_type(mut ref v) => v,
+            data => panic!("Unexpected data type {:?}. Expected: {}.", data, stringify!($data_type))
+        };
+
+        data
+    }};
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
