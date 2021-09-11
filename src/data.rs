@@ -26,6 +26,7 @@ pub enum Data {
     Test(Test),
     Init(Init),
     PostInit(PostInit),
+    Query(Query),
 }
 
 impl Default for Data {
