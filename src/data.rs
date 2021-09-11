@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use arma_rs::{ArmaValue, ToArma, arma_value};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -148,6 +150,39 @@ impl ToArma for Event {
         arma_value!({
             "event_type": self.event_type,
             "triggered_at": self.triggered_at
+        })
+    }
+}
+
+// territory
+//   - territory_id: Returns a single territory that matches this ID
+// territories:
+//   - uid: Returns any territories the target uid is a part of
+//   - (no arguments): Lists all territories
+// player_info_account_only
+// leaderboard
+// leaderboard_deaths
+// leaderboard_score
+// restore
+// reset_player
+// reset_all
+// get_territory_id_from_hash
+// set_custom_territory_id
+// get_hash_from_id
+// get_payment_count
+// increment_payment_counter
+// reset_payment_counter
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Query {
+    pub name: String,
+    pub arguments: HashMap<String, String>
+}
+
+impl ToArma for Query {
+    fn to_arma(&self) -> ArmaValue {
+        arma_value!({
+            "name": self.name,
+            "arguments": self.arguments
         })
     }
 }
