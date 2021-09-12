@@ -187,6 +187,7 @@ pub enum Type {
     PostInit,
     Event,
     Query,
+    QueryResult,
 }
 
 ////////////////////////////////////////////////////////////
