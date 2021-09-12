@@ -29,6 +29,7 @@ pub enum Data {
     Init(Init),
     PostInit(PostInit),
     Query(Query),
+    QueryResult(QueryResult),
 }
 
 impl Default for Data {
@@ -188,6 +189,19 @@ impl ToArma for Query {
         arma_value!({
             "name": self.name,
             "arguments": self.arguments
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct QueryResult {
+    pub results: HashMap<String, String>
+}
+
+impl ToArma for QueryResult {
+    fn to_arma(&self) -> ArmaValue {
+        arma_value!({
+            "results": self.results
         })
     }
 }
