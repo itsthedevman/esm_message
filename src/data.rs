@@ -195,7 +195,7 @@ impl ToArma for Query {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct QueryResult {
-    pub results: HashMap<String, String>
+    pub results: Vec<String>
 }
 
 impl ToArma for QueryResult {
