@@ -64,6 +64,8 @@ pub struct Init {
     pub price_per_object: f32,
     pub territory_lifetime: f32,
     pub territory_data: String,
+    pub vg_enabled: bool,
+    pub vg_max_sizes: String,
     pub server_start_time: DateTime<Utc>,
     pub extension_version: String,
 }
