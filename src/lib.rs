@@ -182,12 +182,21 @@ pub enum Type {
     Pong,
     Test,
 
+    ///////////////////////
     // Client message types
+    ///////////////////////
+
+    // Initialization events
     Init,
-    PostInit,
+
+    // Client event. on_response is one example
     Event,
+
+    // Database query.
     Query,
-    QueryResult,
+
+    // Execute a Arma function
+    Arma,
 }
 
 ////////////////////////////////////////////////////////////

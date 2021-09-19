@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use arma_rs::{ArmaValue, ToArma, arma_value};
+use arma_rs::{ArmaValue, ToArma, arma_value, IntoArma};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -26,10 +26,17 @@ macro_rules! retrieve_data {
 pub enum Data {
     Empty,
     Test(Test),
+
+    // Init
     Init(Init),
     PostInit(PostInit),
+
+    // Query
     Query(Query),
     QueryResult(QueryResult),
+
+    // Arma
+    Reward(Reward),
 }
 
 impl Default for Data {
@@ -47,19 +54,12 @@ impl ToArma for Data {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Test {
     pub foo: String
 }
 
-impl ToArma for Test {
-    fn to_arma(&self) -> ArmaValue {
-        arma_value!({ "foo": self.foo })
-    }
-}
-
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Init {
     pub server_name: String,
     pub price_per_object: f32,
@@ -71,21 +71,7 @@ pub struct Init {
     pub extension_version: String,
 }
 
-// TODO: Create derive for ToArma so this isn't needed
-impl ToArma for Init {
-    fn to_arma(&self) -> ArmaValue {
-        arma_value!({
-            "server_name": self.server_name,
-            "price_per_object": self.price_per_object,
-            "territory_lifetime": self.territory_lifetime,
-            "territory_data": self.territory_data,
-            "server_start_time": self.server_start_time,
-            "extension_version": self.extension_version
-        })
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct PostInit {
     pub extdb_path: String,
     pub gambling_modifier: i64,
@@ -109,55 +95,22 @@ pub struct PostInit {
     pub territory_payment_tax: i64,
     pub territory_upgrade_tax: i64,
     pub territory_admins: Vec<String>,
-    // For now
-    // pub reward_player_poptabs: i64,
-    // pub reward_locker_poptabs: i64,
-    // pub reward_respect: i64,
-    // pub reward_items: HashMap<String, i64>,
 }
 
-impl ToArma for PostInit {
-    fn to_arma(&self) -> ArmaValue {
-        arma_value!({
-            "extdb_path": self.extdb_path,
-            "gambling_modifier": self.gambling_modifier,
-            "gambling_payout": self.gambling_payout,
-            "gambling_randomizer_max": self.gambling_randomizer_max,
-            "gambling_randomizer_mid": self.gambling_randomizer_mid,
-            "gambling_randomizer_min": self.gambling_randomizer_min,
-            "gambling_win_chance": self.gambling_win_chance,
-            "logging_add_player_to_territory": self.logging_add_player_to_territory,
-            "logging_demote_player": self.logging_demote_player,
-            "logging_exec": self.logging_exec,
-            "logging_gamble": self.logging_gamble,
-            "logging_modify_player": self.logging_modify_player,
-            "logging_pay_territory": self.logging_pay_territory,
-            "logging_promote_player": self.logging_promote_player,
-            "logging_remove_player_from_territory": self.logging_remove_player_from_territory,
-            "logging_reward": self.logging_reward,
-            "logging_transfer": self.logging_transfer,
-            "logging_upgrade_territory": self.logging_upgrade_territory,
-            "max_payment_count": self.max_payment_count,
-            "territory_payment_tax": self.territory_payment_tax,
-            "territory_upgrade_tax": self.territory_upgrade_tax,
-            "territory_admins": self.territory_admins
-        })
-    }
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+pub struct Reward {
+    pub target_uid: String,
+    pub player_poptabs: i64,
+    pub locker_poptabs: i64,
+    pub respect: i64,
+    pub items: String,
+    pub vehicles: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Event {
     pub event_type: String,
     pub triggered_at: DateTime<Utc>
-}
-
-impl ToArma for Event {
-    fn to_arma(&self) -> ArmaValue {
-        arma_value!({
-            "event_type": self.event_type,
-            "triggered_at": self.triggered_at
-        })
-    }
 }
 
 // territory
@@ -178,34 +131,16 @@ impl ToArma for Event {
 // get_payment_count
 // increment_payment_counter
 // reset_payment_counter
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Query {
     pub name: String,
     pub arguments: HashMap<String, String>
 }
 
-impl ToArma for Query {
-    fn to_arma(&self) -> ArmaValue {
-        arma_value!({
-            "name": self.name,
-            "arguments": self.arguments
-        })
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct QueryResult {
     pub results: Vec<String>
 }
-
-impl ToArma for QueryResult {
-    fn to_arma(&self) -> ArmaValue {
-        arma_value!({
-            "results": self.results
-        })
-    }
-}
-
 
 #[cfg(test)]
 mod tests {
