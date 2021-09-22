@@ -4,6 +4,23 @@ use arma_rs::{ArmaValue, ToArma, arma_value, IntoArma};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+/// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
+/// Usage:
+///     retrieve_data!(&message, Init)
+#[macro_export]
+macro_rules! retrieve_data {
+    ($enum:expr, $module:ident::$type:ident) => {{
+        let data = match &$enum {
+            $module::$type(ref v) => v.clone(),
+            data => panic!("Unexpected type {:?}. Expected: {}.", data, stringify!($type))
+        };
+
+        data
+    }};
+}
+
+
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
@@ -123,4 +140,23 @@ pub struct Query {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct QueryResult {
     pub results: Vec<String>
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Message, Metadata, Type, data, metadata};
+
+    #[test]
+    fn test_retrieve_data() {
+        let mut message = Message::new(Type::Test);
+        message.data = Data::Test(data::Test { foo: "testing".into() });
+        message.metadata = Metadata::Test(metadata::Test { foo: "testing".into() });
+
+        let result = retrieve_data!(&message.data, Data::Test);
+        assert_eq!(result.foo, String::from("testing"));
+
+        let result = retrieve_data!(&message.metadata, Metadata::Test);
+        assert_eq!(result.foo, String::from("testing"));
+    }
 }
