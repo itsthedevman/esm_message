@@ -99,7 +99,6 @@ pub struct PostInit {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Reward {
-    pub target_uid: String,
     pub player_poptabs: i64,
     pub locker_poptabs: i64,
     pub respect: i64,
