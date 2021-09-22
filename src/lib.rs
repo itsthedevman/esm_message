@@ -2,8 +2,6 @@ pub mod data;
 pub mod error;
 pub mod metadata;
 
-use std::collections::HashMap;
-
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use arma_rs::ArmaValue;
@@ -11,7 +9,6 @@ use message_io::network::ResourceId;
 use rand::random;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use uuid::Uuid;
 
 pub use data::*;
