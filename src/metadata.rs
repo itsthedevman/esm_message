@@ -14,6 +14,16 @@ impl Default for Metadata {
         Metadata::Empty
     }
 }
+
+impl ToArma for Metadata {
+    fn to_arma(&self) -> ArmaValue {
+        match self {
+            Metadata::Empty => arma_value!({}),
+            d => d.to_arma()
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Test {
     pub foo: String
