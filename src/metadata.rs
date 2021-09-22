@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use arma_rs::{ArmaValue, ToArma, IntoArma};
+use arma_rs::{ArmaValue, ToArma, IntoArma, arma_value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
