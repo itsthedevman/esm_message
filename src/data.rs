@@ -99,9 +99,9 @@ pub struct PostInit {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Reward {
-    pub player_poptabs: i64,
-    pub locker_poptabs: i64,
-    pub respect: i64,
+    pub player_poptabs: isize,
+    pub locker_poptabs: isize,
+    pub respect: isize,
     pub items: String,
     pub vehicles: String,
 }
