@@ -19,7 +19,8 @@ impl ToArma for Metadata {
     fn to_arma(&self) -> ArmaValue {
         match self {
             Metadata::Empty => arma_value!({}),
-            d => d.to_arma()
+            Metadata::Test(t) => t.to_arma(),
+            Metadata::Command(c) => c.to_arma(),
         }
     }
 }
