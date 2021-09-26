@@ -49,7 +49,12 @@ impl ToArma for Data {
     fn to_arma(&self) -> ArmaValue {
         match self {
             Data::Empty => arma_value!({}),
-            d => d.to_arma()
+            Data::Test(t) => t.to_arma(),
+            Data::Init(i) => i.to_arma(),
+            Data::PostInit(pi) => pi.to_arma(),
+            Data::Query(q) => q.to_arma(),
+            Data::QueryResult(qr) => qr.to_arma(),
+            Data::Reward(r) => r.to_arma()
         }
     }
 }
@@ -62,8 +67,8 @@ pub struct Test {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Init {
     pub server_name: String,
-    pub price_per_object: f32,
-    pub territory_lifetime: f32,
+    pub price_per_object: f64,
+    pub territory_lifetime: f64,
     pub territory_data: String,
     pub vg_enabled: bool,
     pub vg_max_sizes: String,
@@ -74,12 +79,12 @@ pub struct Init {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct PostInit {
     pub extdb_path: String,
-    pub gambling_modifier: i64,
-    pub gambling_payout: i64,
+    pub gambling_modifier: isize,
+    pub gambling_payout: isize,
     pub gambling_randomizer_max: f64,
     pub gambling_randomizer_mid: f64,
     pub gambling_randomizer_min: f64,
-    pub gambling_win_chance: i64,
+    pub gambling_win_chance: isize,
     pub logging_add_player_to_territory: bool,
     pub logging_demote_player: bool,
     pub logging_exec: bool,
@@ -91,9 +96,9 @@ pub struct PostInit {
     pub logging_reward: bool,
     pub logging_transfer: bool,
     pub logging_upgrade_territory: bool,
-    pub max_payment_count: i64,
-    pub territory_payment_tax: i64,
-    pub territory_upgrade_tax: i64,
+    pub max_payment_count: isize,
+    pub territory_payment_tax: isize,
+    pub territory_upgrade_tax: isize,
     pub territory_admins: Vec<String>,
 }
 
