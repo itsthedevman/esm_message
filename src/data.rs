@@ -86,6 +86,7 @@ pub struct PostInit {
     pub gambling_randomizer_min: f64,
     pub gambling_win_chance: isize,
     pub logging_add_player_to_territory: bool,
+    pub logging_channel_id: String,
     pub logging_demote_player: bool,
     pub logging_exec: bool,
     pub logging_gamble: bool,
