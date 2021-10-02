@@ -15,6 +15,10 @@ pub use data::*;
 pub use error::*;
 pub use metadata::*;
 
+// Numbers in Arma are best stored as Strings when sending across the wire to avoid precision loss.
+// Use this type for any numbers
+pub type NumberString = String;
+
 /*
     {
         id: "",

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use arma_rs::{ArmaValue, ToArma, arma_value, IntoArma};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use crate::NumberString;
 
 /// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
 /// Usage:
@@ -18,10 +19,6 @@ macro_rules! retrieve_data {
         data
     }};
 }
-
-// Numbers in Arma are best stored as Strings when sending across the wire to avoid precision loss.
-// Use this type for any numbers
-pub type NumberString = String;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
