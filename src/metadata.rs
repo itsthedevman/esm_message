@@ -38,8 +38,8 @@ pub struct Command {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Player {
-    pub steam_uid: String,
     pub discord_id: String,
-    pub discord_name: String,
     pub discord_mention: String,
+    pub discord_name: String,
+    pub steam_uid: String,
 }

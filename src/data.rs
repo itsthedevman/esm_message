@@ -66,14 +66,14 @@ pub struct Test {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Init {
-    pub server_name: String,
+    pub extension_version: String,
     pub price_per_object: f64,
-    pub territory_lifetime: f64,
+    pub server_name: String,
+    pub server_start_time: DateTime<Utc>,
     pub territory_data: String,
+    pub territory_lifetime: f64,
     pub vg_enabled: bool,
     pub vg_max_sizes: String,
-    pub server_start_time: DateTime<Utc>,
-    pub extension_version: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
@@ -98,24 +98,24 @@ pub struct PostInit {
     pub logging_transfer: bool,
     pub logging_upgrade_territory: bool,
     pub max_payment_count: isize,
+    pub territory_admins: Vec<String>,
     pub territory_payment_tax: isize,
     pub territory_upgrade_tax: isize,
-    pub territory_admins: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Reward {
-    pub player_poptabs: isize,
-    pub locker_poptabs: isize,
-    pub respect: isize,
     pub items: String,
+    pub locker_poptabs: isize,
+    pub player_poptabs: isize,
+    pub respect: isize,
     pub vehicles: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Event {
     pub event_type: String,
-    pub triggered_at: DateTime<Utc>
+    pub triggered_at: DateTime<Utc>,
 }
 
 // territory
@@ -138,13 +138,19 @@ pub struct Event {
 // reset_payment_counter
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Query {
+    pub arguments: HashMap<String, String>,
     pub name: String,
-    pub arguments: HashMap<String, String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct QueryResult {
-    pub results: Vec<String>
+    pub results: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+pub struct SendToChannel {
+    pub id: String,
+    pub message: String,
 }
 
 #[cfg(test)]
