@@ -459,8 +459,8 @@ mod tests {
 
         let server_init = Init {
             server_name: "server_name".into(),
-            price_per_object: 10.0,
-            territory_lifetime: 10.0,
+            price_per_object: "10".into(),
+            territory_lifetime: "7".into(),
             territory_data: "[]".into(),
             server_start_time: chrono::Utc::now(),
             extension_version: "2.0.0".into(),
@@ -495,12 +495,12 @@ mod tests {
             Data::Init(data) => {
                 assert_eq!(data.server_name, expected.server_name);
                 assert_eq!(
-                    data.price_per_object as i64,
-                    expected.price_per_object as i64
+                    data.price_per_object,
+                    expected.price_per_object
                 );
                 assert_eq!(
-                    data.territory_lifetime as i64,
-                    expected.territory_lifetime as i64
+                    data.territory_lifetime,
+                    expected.territory_lifetime
                 );
                 assert_eq!(data.territory_data, expected.territory_data);
             }
@@ -541,8 +541,8 @@ mod tests {
 
         let server_init = Init {
             server_name: "server_name".into(),
-            price_per_object: 10.0,
-            territory_lifetime: 10.0,
+            price_per_object: "10".into(),
+            territory_lifetime: "7".into(),
             territory_data: "[]".into(),
             server_start_time: chrono::Utc::now(),
             extension_version: "2.0.0".into(),
@@ -613,7 +613,10 @@ mod tests {
             id.to_string(),
             arma_value!([arma_value!("test"), arma_value!([arma_value!(["foo", "testing"])])]),
             arma_value!([arma_value!("empty"), arma_value!([])]),
-            arma_value!({ "code": arma_value!(["error_message"]), "message": arma_value!(["This is a message"])})
+            arma_value!({
+                "code" => arma_value!(["error_message"]),
+                "message" => arma_value!(["This is a message"])
+            })
         ).unwrap();
 
         assert_eq!(result.id, expectation.id);

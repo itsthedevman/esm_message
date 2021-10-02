@@ -19,7 +19,9 @@ macro_rules! retrieve_data {
     }};
 }
 
-
+// Numbers in Arma are best stored as Strings when sending across the wire to avoid precision loss.
+// Use this type for any numbers
+pub type NumberString = String;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
@@ -67,11 +69,11 @@ pub struct Test {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Init {
     pub extension_version: String,
-    pub price_per_object: f64,
+    pub price_per_object: NumberString,
     pub server_name: String,
     pub server_start_time: DateTime<Utc>,
     pub territory_data: String,
-    pub territory_lifetime: f64,
+    pub territory_lifetime: NumberString,
     pub vg_enabled: bool,
     pub vg_max_sizes: String,
 }
@@ -79,12 +81,12 @@ pub struct Init {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct PostInit {
     pub extdb_path: String,
-    pub gambling_modifier: isize,
-    pub gambling_payout: isize,
-    pub gambling_randomizer_max: f64,
-    pub gambling_randomizer_mid: f64,
-    pub gambling_randomizer_min: f64,
-    pub gambling_win_chance: isize,
+    pub gambling_modifier: NumberString,
+    pub gambling_payout: NumberString,
+    pub gambling_randomizer_max: NumberString,
+    pub gambling_randomizer_mid: NumberString,
+    pub gambling_randomizer_min: NumberString,
+    pub gambling_win_chance: NumberString,
     pub logging_add_player_to_territory: bool,
     pub logging_channel_id: String,
     pub logging_demote_player: bool,
@@ -97,18 +99,18 @@ pub struct PostInit {
     pub logging_reward: bool,
     pub logging_transfer: bool,
     pub logging_upgrade_territory: bool,
-    pub max_payment_count: isize,
+    pub max_payment_count: NumberString,
     pub territory_admins: Vec<String>,
-    pub territory_payment_tax: isize,
-    pub territory_upgrade_tax: isize,
+    pub territory_payment_tax: NumberString,
+    pub territory_upgrade_tax: NumberString,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Reward {
     pub items: String,
-    pub locker_poptabs: isize,
-    pub player_poptabs: isize,
-    pub respect: isize,
+    pub locker_poptabs: NumberString,
+    pub player_poptabs: NumberString,
+    pub respect: NumberString,
     pub vehicles: String,
 }
 
