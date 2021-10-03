@@ -151,7 +151,7 @@ pub struct QueryResult {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct SendToChannel {
     pub id: String,
-    pub message: String,
+    pub content: String,
 }
 
 #[cfg(test)]
