@@ -36,6 +36,7 @@ pub enum Data {
 
     // Arma
     Reward(Reward),
+    SendToChannel(SendToChannel),
 }
 
 impl Default for Data {
@@ -53,7 +54,8 @@ impl ToArma for Data {
             Data::PostInit(pi) => pi.to_arma(),
             Data::Query(q) => q.to_arma(),
             Data::QueryResult(qr) => qr.to_arma(),
-            Data::Reward(r) => r.to_arma()
+            Data::Reward(r) => r.to_arma(),
+            Data::SendToChannel(d) => d.to_arma(),
         }
     }
 }
