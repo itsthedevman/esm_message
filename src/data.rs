@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use arma_rs::{ArmaValue, ToArma, arma_value, IntoArma};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::NumberString;
+
+// Numbers in Arma are best stored as Strings when sending across the wire to avoid precision loss.
+// Use this type for any numbers
+pub type NumberString = String;
 
 /// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
 /// Usage:

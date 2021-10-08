@@ -15,10 +15,6 @@ pub use data::*;
 pub use error::*;
 pub use metadata::*;
 
-// Numbers in Arma are best stored as Strings when sending across the wire to avoid precision loss.
-// Use this type for any numbers
-pub type NumberString = String;
-
 /*
     {
         id: "",
@@ -415,37 +411,31 @@ fn add_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(),
         None => return Err(format!("Failed to extract hashmap from {:?}", input)),
     };
 
-    // Process "code" and "message" types
-    for (error_type, entries) in errors {
-        let error_type =
-            match error_type.as_str() {
-                Some(s) => match s {
-                    "code" => ErrorType::Code,
-                    "message" => ErrorType::Message,
-                    _ => return Err(format!(
-                        "The provided error type is invalid. {:?} is not \"code\" or \"message\"",
-                        s
-                    )),
-                },
-                None => return Err(format!("Failed to extract string from {:?}", error_type)),
-            };
+    let processor = |error_type: ErrorType, message: &mut Message| {
+        let entries = match errors.get(serde_json::to_string(&error_type).unwrap()) {
+            Some(v) => v,
+            None => return
+        };
 
         let entries = match entries.as_vec() {
             Some(s) => s,
-            None => return Err(format!("Failed to extract hashmap from {:?}", entries)),
+            None => return,
         };
 
         for entry in entries {
             // Own so ArmaValue doesn't have to be 'static
             let entry = match entry.as_str() {
                 Some(s) => s.to_owned(),
-                None => return Err(format!("Failed to extract string from {:?}", entry)),
+                None => return,
             };
 
             // Finally, add the error to the message
             message.add_error(error_type.clone(), entry);
         }
-    }
+    };
+
+    processor(ErrorType::Code, message);
+    processor(ErrorType::Message, message);
 
     Ok(())
 }
