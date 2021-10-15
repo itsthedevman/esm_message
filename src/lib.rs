@@ -99,25 +99,12 @@ impl Message {
         self
     }
 
-    pub fn from_bytes<F>(data: Vec<u8>, server_key_getter: F) -> Result<Message, String>
-    where
-        F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
-    {
-        let message = decrypt_message(data, server_key_getter)?;
-
-        Ok(message)
+    pub fn from_bytes(data: Vec<u8>, key: &[u8]) -> Result<Message, String> {
+        decrypt_message(data, key)
     }
 
-    pub fn as_bytes<F>(&self, server_key_getter: F) -> Result<Vec<u8>, String>
-    where
-        F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
-    {
-        let server_id = match self.server_id.clone() {
-            Some(id) => id,
-            None => return Err("Message does not have a server ID".into()),
-        };
-
-        encrypt_message(self, &server_id, server_key_getter)
+    pub fn as_bytes(&self, key: &[u8]) -> Result<Vec<u8>, String> {
+        encrypt_message(self, key)
     }
 
     //  [
@@ -182,6 +169,7 @@ pub enum Type {
     Ping,
     Pong,
     Test,
+    Error,
 
     ///////////////////////
     // Client message types
@@ -203,37 +191,12 @@ pub enum Type {
 ////////////////////////////////////////////////////////////
 
 #[allow(clippy::ptr_arg)]
-fn encrypt_message<F>(
-    message: &Message,
-    server_id: &Vec<u8>,
-    server_key_getter: F,
-) -> Result<Vec<u8>, String>
-where
-    F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
-{
-    // Find the server key so the message can be encrypted
-    let server_key = match (server_key_getter)(server_id) {
-        Some(key) => key,
-        None => return Err(format!("Failed to retrieve server_key for {:?}", server_id)),
-    };
-
+fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, String> {
     // Setup everything for encryption
     let encryption_key = Key::from_slice(&server_key[0..32]); // server_key has to be exactly 32 bytes
     let encryption_cipher = Aes256Gcm::new(encryption_key);
     let nonce_key: Vec<u8> = (0..12).map(|_| random::<u8>()).collect();
     let encryption_nonce = Nonce::from_slice(&nonce_key);
-
-    // Serialize this message
-    let message = match serde_json::to_vec(&message) {
-        Ok(bytes) => bytes,
-        Err(e) => return Err(e.to_string()),
-    };
-
-    // Encrypt the message
-    let encrypted_message = match encryption_cipher.encrypt(encryption_nonce, message.as_ref()) {
-        Ok(bytes) => bytes,
-        Err(e) => return Err(e.to_string()),
-    };
 
     /*
         Message (as bytes)
@@ -246,6 +209,7 @@ where
         ]
     */
     // Start the packet off with the id length and itself
+    let server_id = message.server_id.clone().unwrap();
     let mut packet: Vec<u8> = vec![server_id.len() as u8];
     packet.extend(&*server_id);
 
@@ -253,27 +217,31 @@ where
     packet.push(nonce_key.len() as u8);
     packet.extend(&*nonce_key);
 
+    // Serialize this message
+    let message_bytes = match serde_json::to_vec(&message) {
+        Ok(bytes) => bytes,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    // Encrypt the message
+    let encrypted_message =
+        match encryption_cipher.encrypt(encryption_nonce, message_bytes.as_ref()) {
+            Ok(bytes) => bytes,
+            Err(e) => return Err(e.to_string()),
+        };
+
     // Now add the encrypted message to the end. This completes the packet
     packet.extend(&*encrypted_message);
 
     Ok(packet)
 }
 
-fn decrypt_message<F>(bytes: Vec<u8>, server_key_getter: F) -> Result<Message, String>
-where
-    F: Fn(&Vec<u8>) -> Option<Vec<u8>>,
-{
+fn decrypt_message(bytes: Vec<u8>, server_key: &[u8]) -> Result<Message, String> {
     // The first byte is the length of the server_id so we know how many bytes to extract
     let id_length = bytes[0] as usize;
 
     // Extract the server ID and convert to a vec
     let server_id = bytes[1..=id_length].to_vec();
-
-    // Find the server key so the message can be decrypted
-    let server_key = match (server_key_getter)(&server_id) {
-        Some(key) => key,
-        None => return Err(format!("Failed to retrieve server_key for {:?}", server_id)),
-    };
 
     // Now to decrypt. First step, extract the nonce
     let nonce_offset = 1 + id_length;
@@ -287,7 +255,7 @@ where
     let encrypted_bytes = bytes[enc_offset..].to_vec();
 
     // Build the cipher
-    let server_key = &server_key[0..32]; // server_key has to be exactly 32 bytes
+    let server_key = &server_key[0..=31]; // server_key has to be exactly 32 bytes
     let key = Key::from_slice(server_key);
     let cipher = Aes256Gcm::new(key);
 
@@ -319,80 +287,82 @@ where
 }
 
 fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, String> {
-    let input =
-        match input.as_vec() {
-            Some(v) => v,
-            None => return Err(format!("Failed to extract vec from {:?}", input)),
-        };
+    let input = match input.as_vec() {
+        Some(v) => v,
+        None => return Err(format!("Failed to extract vec from {:?}", input)),
+    };
 
-    let input_type =
-        match input.get(0) {
-            Some(v) => match v.as_str() {
-                Some(v) => v,
-                None => return Err(format!("Failed to extract string from {:?}", v)),
-            },
-            None => {
-                return Err(format!(
-                    "Failed to retrieve item at index 0 from {:?}",
-                    input
-                ))
-            }
-        };
-
-    let input_content =
-        match input.get(1) {
+    let input_type = match input.get(0) {
+        Some(v) => match v.as_str() {
             Some(v) => v,
-            None => {
-                return Err(format!(
-                    "Failed to retrieve item at index 1 from {:?}",
-                    input
-                ))
-            }
-        };
+            None => return Err(format!("Failed to extract string from {:?}", v)),
+        },
+        None => {
+            return Err(format!(
+                "Failed to retrieve item at index 0 from {:?}",
+                input
+            ))
+        }
+    };
 
-    let input_content =
-        match input_content.as_vec() {
-            Some(v) => v,
-            None => {
-                return Err(format!(
-                    "Failed to retrieve hashmap from {:?}",
-                    input_content
-                ))
-            },
-        };
+    let input_content = match input.get(1) {
+        Some(v) => v,
+        None => {
+            return Err(format!(
+                "Failed to retrieve item at index 1 from {:?}",
+                input
+            ))
+        }
+    };
+
+    let input_content = match input_content.as_vec() {
+        Some(v) => v,
+        None => {
+            return Err(format!(
+                "Failed to retrieve hashmap from {:?}",
+                input_content
+            ))
+        }
+    };
 
     // This allows [[key, value]] and [] since an empty hashmap is just []
-    let json_content =
-        if input_content.is_empty() {
-            // This will deserialize as a unit enum
-            String::from("null")
-        } else {
-            let mut attributes: Vec<String> = Vec::new();
+    let json_content = if input_content.is_empty() {
+        // This will deserialize as a unit enum
+        String::from("null")
+    } else {
+        let mut attributes: Vec<String> = Vec::new();
 
-            for arma_value in input_content {
-                let pair = match arma_value.as_vec() {
-                    Some(v) => v,
-                    None => return Err(format!("Failed to extract vec from {:?}", arma_value)),
-                };
+        for arma_value in input_content {
+            let pair = match arma_value.as_vec() {
+                Some(v) => v,
+                None => return Err(format!("Failed to extract vec from {:?}", arma_value)),
+            };
 
-                // Make sure it's a pair
-                if pair.len() != 2 { return Err(format!("{:?} must only contain two elements", pair)); }
-
-                let key = pair.get(0).unwrap();
-                let value = pair.get(1).unwrap();
-
-                // Make sure the key is a string.
-                let key = match key.as_str() {
-                    Some(s) => s,
-                    None => return Err(format!("The first item (the key) of {:?} can only be a string", pair))
-                };
-
-                attributes.push(format!("\"{}\": {}", key, value));
+            // Make sure it's a pair
+            if pair.len() != 2 {
+                return Err(format!("{:?} must only contain two elements", pair));
             }
 
-            // Build the Data JSON
-            format!("{{ {} }}", attributes.join(","))
-        };
+            let key = pair.get(0).unwrap();
+            let value = pair.get(1).unwrap();
+
+            // Make sure the key is a string.
+            let key = match key.as_str() {
+                Some(s) => s,
+                None => {
+                    return Err(format!(
+                        "The first item (the key) of {:?} can only be a string",
+                        pair
+                    ))
+                }
+            };
+
+            attributes.push(format!("\"{}\": {}", key, value));
+        }
+
+        // Build the Data JSON
+        format!("{{ {} }}", attributes.join(","))
+    };
 
     // Convert to JSON, this allows us to deserialize it as an actual type
     let json = format!(
@@ -417,18 +387,19 @@ fn add_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(),
 
     // Process "code" and "message" types
     for (error_type, entries) in errors {
-        let error_type =
-            match error_type.as_str() {
-                Some(s) => match s {
-                    "code" => ErrorType::Code,
-                    "message" => ErrorType::Message,
-                    _ => return Err(format!(
+        let error_type = match error_type.as_str() {
+            Some(s) => match s {
+                "code" => ErrorType::Code,
+                "message" => ErrorType::Message,
+                _ => {
+                    return Err(format!(
                         "The provided error type is invalid. {:?} is not \"code\" or \"message\"",
                         s
-                    )),
-                },
-                None => return Err(format!("Failed to extract string from {:?}", error_type)),
-            };
+                    ))
+                }
+            },
+            None => return Err(format!("Failed to extract string from {:?}", error_type)),
+        };
 
         let entries = match entries.as_vec() {
             Some(s) => s,
@@ -453,6 +424,7 @@ fn add_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(),
 #[cfg(test)]
 mod tests {
     use arma_rs::{arma_value, ToArma};
+    use esm_key::create;
 
     use super::*;
     use crate::data::Init;
@@ -474,19 +446,17 @@ mod tests {
 
         let expected = server_init.clone();
 
+        let server_id = String::from("esm_testing");
+        message.server_id = Some(server_id.as_bytes().to_vec());
         message.data = Data::Init(server_init);
 
-        let server_id = "testing".as_bytes().to_vec();
-        let server_key = "12345678901234567890123456789012345678901234567890"
-            .as_bytes()
-            .to_vec();
+        let (server_key, _token) = create(server_id).unwrap();
+        let server_key = server_key.as_bytes();
 
-        let encrypted_bytes =
-            encrypt_message(&message, &server_id, |_| Some(server_key.to_owned()));
+        let encrypted_bytes = encrypt_message(&message, &server_key);
         assert!(encrypted_bytes.is_ok());
 
-        let decrypted_message =
-            decrypt_message(encrypted_bytes.unwrap(), |_| Some(server_key.to_owned()));
+        let decrypted_message = decrypt_message(encrypted_bytes.unwrap(), &server_key);
         assert!(decrypted_message.is_ok());
 
         let decrypted_message = decrypted_message.unwrap();
@@ -498,14 +468,8 @@ mod tests {
         match decrypted_message.data {
             Data::Init(data) => {
                 assert_eq!(data.server_name, expected.server_name);
-                assert_eq!(
-                    data.price_per_object,
-                    expected.price_per_object
-                );
-                assert_eq!(
-                    data.territory_lifetime,
-                    expected.territory_lifetime
-                );
+                assert_eq!(data.price_per_object, expected.price_per_object);
+                assert_eq!(data.territory_lifetime, expected.territory_lifetime);
                 assert_eq!(data.territory_data, expected.territory_data);
             }
             _ => panic!("Invalid message data"),
@@ -615,13 +579,17 @@ mod tests {
         let mut result = Message::from_arma(
             Type::Event,
             id.to_string(),
-            arma_value!([arma_value!("test"), arma_value!([arma_value!(["foo", "testing"])])]),
+            arma_value!([
+                arma_value!("test"),
+                arma_value!([arma_value!(["foo", "testing"])])
+            ]),
             arma_value!([arma_value!("empty"), arma_value!([])]),
             arma_value!({
                 "code" => arma_value!(["error_message"]),
                 "message" => arma_value!(["This is a message"])
-            })
-        ).unwrap();
+            }),
+        )
+        .unwrap();
 
         assert_eq!(result.id, expectation.id);
         assert_eq!(result.data, expectation.data);

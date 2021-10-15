@@ -16,3 +16,6 @@ rand = "0.8.3"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "0.8", features = ["serde", "v4"] }
 arma-rs = { git = "https://github.com/WolfkillArcadia/arma-rs.git", features = ["chrono", "uuid"] }
+
+[dev-dependencies]
+esm_key = { path = "../esm_key" }
