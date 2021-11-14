@@ -37,6 +37,7 @@ pub enum Data {
     // Arma
     Reward(Reward),
     SendToChannel(SendToChannel),
+    Execute(Execute),
 }
 
 impl Default for Data {
@@ -56,6 +57,7 @@ impl ToArma for Data {
             Data::QueryResult(qr) => qr.to_arma(),
             Data::Reward(r) => r.to_arma(),
             Data::SendToChannel(d) => d.to_arma(),
+            Data::Execute(e) => e.to_arma(),
         }
     }
 }
@@ -111,6 +113,12 @@ pub struct Reward {
     pub player_poptabs: NumberString,
     pub respect: NumberString,
     pub vehicles: Vec<ArmaHashMap>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+pub struct Execute {
+    pub target_type: String,
+    pub code: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
