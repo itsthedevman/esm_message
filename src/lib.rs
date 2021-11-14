@@ -149,7 +149,7 @@ impl Message {
         message.metadata = metadata;
 
         // Add the errors. They have to be converted differently
-        match add_errors_to_message(&errors, &mut message) {
+        match add_arma_errors_to_message(&errors, &mut message) {
             Ok(_) => Ok(message),
             Err(e) => Err(e),
         }
@@ -382,44 +382,23 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
     Ok(output)
 }
 
-fn add_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(), String> {
+fn add_arma_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(), String> {
     // Convert to hashmap
-    let errors = match input.as_hashmap() {
+    let errors = match input.as_vec() {
         Some(h) => h,
         None => return Err(format!("Failed to extract hashmap from {:?}", input)),
     };
 
     // Process "code" and "message" types
-    for (error_type, entries) in errors {
-        let error_type = match error_type.as_str() {
-            Some(s) => match s {
-                "code" => ErrorType::Code,
-                "message" => ErrorType::Message,
-                _ => {
-                    return Err(format!(
-                        "The provided error type is invalid. {:?} is not \"code\" or \"message\"",
-                        s
-                    ))
-                }
-            },
-            None => return Err(format!("Failed to extract string from {:?}", error_type)),
+    for error_message in errors {
+        // Own so ArmaValue doesn't have to be 'static
+        let error_message = match error_message.as_str() {
+            Some(s) => s.to_owned(),
+            None => return Err(format!("Failed to extract string from {:?}", error_message)),
         };
 
-        let entries = match entries.as_vec() {
-            Some(s) => s,
-            None => return Err(format!("Failed to extract hashmap from {:?}", entries)),
-        };
-
-        for entry in entries {
-            // Own so ArmaValue doesn't have to be 'static
-            let entry = match entry.as_str() {
-                Some(s) => s.to_owned(),
-                None => return Err(format!("Failed to extract string from {:?}", entry)),
-            };
-
-            // Finally, add the error to the message
-            message.add_error(error_type.clone(), entry);
-        }
+        // Finally, add the error to the message
+        message.add_error(ErrorType::Message, error_message);
     }
 
     Ok(())
@@ -453,30 +432,30 @@ mod tests {
         message.server_id = Some(server_id.as_bytes().to_vec());
         message.data = Data::Init(server_init);
 
-        // let (server_key, _token) = create(server_id).unwrap();
-        // let server_key = server_key.as_bytes();
+        let server_key = format!("{}-{}-{}-{}", Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let server_key = server_key.as_bytes();
 
-        // let encrypted_bytes = encrypt_message(&message, &server_key);
-        // assert!(encrypted_bytes.is_ok());
+        let encrypted_bytes = encrypt_message(&message, &server_key);
+        assert!(encrypted_bytes.is_ok());
 
-        // let decrypted_message = decrypt_message(encrypted_bytes.unwrap(), &server_key);
-        // assert!(decrypted_message.is_ok());
+        let decrypted_message = decrypt_message(encrypted_bytes.unwrap(), &server_key);
+        assert!(decrypted_message.is_ok());
 
-        // let decrypted_message = decrypted_message.unwrap();
-        // assert_eq!(decrypted_message.message_type, Type::Connect);
+        let decrypted_message = decrypted_message.unwrap();
+        assert_eq!(decrypted_message.message_type, Type::Connect);
 
-        // // Ensure it has a server ID
-        // assert!(decrypted_message.server_id.is_some());
+        // Ensure it has a server ID
+        assert!(decrypted_message.server_id.is_some());
 
-        // match decrypted_message.data {
-        //     Data::Init(data) => {
-        //         assert_eq!(data.server_name, expected.server_name);
-        //         assert_eq!(data.price_per_object, expected.price_per_object);
-        //         assert_eq!(data.territory_lifetime, expected.territory_lifetime);
-        //         assert_eq!(data.territory_data, expected.territory_data);
-        //     }
-        //     _ => panic!("Invalid message data"),
-        // }
+        match decrypted_message.data {
+            Data::Init(data) => {
+                assert_eq!(data.server_name, expected.server_name);
+                assert_eq!(data.price_per_object, expected.price_per_object);
+                assert_eq!(data.territory_lifetime, expected.territory_lifetime);
+                assert_eq!(data.territory_data, expected.territory_data);
+            }
+            _ => panic!("Invalid message data"),
+        }
     }
 
     #[test]
@@ -576,10 +555,10 @@ mod tests {
 
         expectation.metadata = Metadata::Empty;
 
-        expectation.add_error(ErrorType::Code, "error_message");
         expectation.add_error(ErrorType::Message, "This is a message");
+        expectation.add_error(ErrorType::Message, "this is another message");
 
-        let mut result = Message::from_arma(
+        let result = Message::from_arma(
             Type::Event,
             id.to_string(),
             arma_value!([
@@ -587,25 +566,13 @@ mod tests {
                 arma_value!([arma_value!(["foo", "testing"])])
             ]),
             arma_value!([arma_value!("empty"), arma_value!([])]),
-            arma_value!({
-                "code" => arma_value!(["error_message"]),
-                "message" => arma_value!(["This is a message"])
-            }),
+            arma_value!(["This is a message", "this is another message"]),
         )
         .unwrap();
 
         assert_eq!(result.id, expectation.id);
         assert_eq!(result.data, expectation.data);
         assert_eq!(result.metadata, expectation.metadata);
-
-        // Ensure they're in order
-        result
-            .errors
-            .sort_by(|a, b| a.error_type.cmp(&b.error_type));
-        expectation
-            .errors
-            .sort_by(|a, b| a.error_type.cmp(&b.error_type));
-
         assert_eq!(result.errors, expectation.errors);
     }
 }
