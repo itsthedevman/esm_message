@@ -310,7 +310,10 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
     };
 
     let input_content = match input.get(1) {
-        Some(v) => v,
+        Some(v) => match v.as_vec() {
+            Some(v) => v,
+            None => return Err(format!("Failed to retrieve hashmap from {:?}", v)),
+        },
         None => {
             return Err(format!(
                 "Failed to retrieve item at index 1 from {:?}",
@@ -319,46 +322,30 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         }
     };
 
-    let input_content = match input_content.as_vec() {
-        Some(v) => v,
-        None => {
-            return Err(format!(
-                "Failed to retrieve hashmap from {:?}",
-                input_content
-            ))
-        }
-    };
-
     // This allows [[key, value]] and [] since an empty hashmap is just []
-    let json_content = if input_content.is_empty() {
+    let json_content = if input_content.len() != 2 {
         // This will deserialize as a unit enum
         String::from("null")
     } else {
         let mut attributes: Vec<String> = Vec::new();
 
-        for arma_value in input_content {
-            let pair = match arma_value.as_vec() {
-                Some(v) => v,
-                None => return Err(format!("Failed to extract vec from {:?}", arma_value)),
-            };
+        let keys = match input_content.get(0).unwrap().as_vec() {
+            Some(k) => k,
+            None => return Err(format!("Failed to extract keys from {:?}", input_content)),
+        };
 
-            // Make sure it's a pair
-            if pair.len() != 2 {
-                return Err(format!("{:?} must only contain two elements", pair));
-            }
+        let values = match input_content.get(1).unwrap().as_vec() {
+            Some(v) => v,
+            None => return Err(format!("Failed to extract values from {:?}", input_content)),
+        };
 
-            let key = pair.get(0).unwrap();
-            let value = pair.get(1).unwrap();
+        for (index, key) in keys.iter().enumerate() {
+            let value = values.get(index).unwrap_or(&ArmaValue::Nil);
 
             // Make sure the key is a string.
             let key = match key.as_str() {
                 Some(s) => s,
-                None => {
-                    return Err(format!(
-                        "The first item (the key) of {:?} can only be a string",
-                        pair
-                    ))
-                }
+                None => return Err(format!("The key {:?} can only be a string", key)),
             };
 
             attributes.push(format!("\"{}\": {}", key, value));
@@ -432,7 +419,13 @@ mod tests {
         message.server_id = Some(server_id.as_bytes().to_vec());
         message.data = Data::Init(server_init);
 
-        let server_key = format!("{}-{}-{}-{}", Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let server_key = format!(
+            "{}-{}-{}-{}",
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4()
+        );
         let server_key = server_key.as_bytes();
 
         let encrypted_bytes = encrypt_message(&message, &server_key);
@@ -553,7 +546,9 @@ mod tests {
             foo: "testing".into(),
         });
 
-        expectation.metadata = Metadata::Empty;
+        expectation.metadata = Metadata::Test(metadata::Test {
+            foo: "testing2".into(),
+        });
 
         expectation.add_error(ErrorType::Message, "This is a message");
         expectation.add_error(ErrorType::Message, "this is another message");
@@ -563,9 +558,12 @@ mod tests {
             id.to_string(),
             arma_value!([
                 arma_value!("test"),
-                arma_value!([arma_value!(["foo", "testing"])])
+                arma_value!([arma_value!(["foo"]), arma_value!(["testing"])])
             ]),
-            arma_value!([arma_value!("empty"), arma_value!([])]),
+            arma_value!([
+                arma_value!("test"),
+                arma_value!([arma_value!(["foo"]), arma_value!(["testing2"])])
+            ]),
             arma_value!(["This is a message", "this is another message"]),
         )
         .unwrap();
