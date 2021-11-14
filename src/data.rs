@@ -38,6 +38,7 @@ pub enum Data {
     Reward(Reward),
     SendToChannel(SendToChannel),
     Sqf(Sqf),
+    SqfResult(SqfResult),
 }
 
 impl Default for Data {
