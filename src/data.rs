@@ -59,6 +59,7 @@ impl ToArma for Data {
             Data::Reward(r) => r.to_arma(),
             Data::SendToChannel(d) => d.to_arma(),
             Data::Sqf(s) => s.to_arma(),
+            Data::SqfResult(s) => s.to_arma(),
         }
     }
 }
