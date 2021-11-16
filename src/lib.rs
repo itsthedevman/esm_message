@@ -324,8 +324,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
 
     // This allows [[key, value]] and [] since an empty hashmap is just []
     let json_content = if input_content.len() != 2 {
-        // This will deserialize as a unit enum
-        String::from("null")
+        String::from("[]")
     } else {
         let mut attributes: Vec<String> = Vec::new();
 
