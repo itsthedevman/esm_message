@@ -111,6 +111,7 @@ impl Message {
 
     //  [
     //      "id",
+    //      "type",
     //      [
     //          "data_type",
     //          [["key", "value"], ["key", 2]]
@@ -122,8 +123,8 @@ impl Message {
     //      [["code", []], ["message", []]]
     //  ]
     pub fn from_arma(
-        message_type: Type,
         id: String,
+        message_type: String,
         data: ArmaValue,
         metadata: ArmaValue,
         errors: ArmaValue,
@@ -136,6 +137,12 @@ impl Message {
         let metadata: Metadata = match data_from_arma_value(&metadata) {
             Ok(v) => v,
             Err(e) => return Err(e),
+        };
+
+        // Has to be double quoted
+        let message_type: Type = match serde_json::from_str(&format!("\"{}\"", message_type)) {
+            Ok(t) => t,
+            Err(e) => return Err(format!("\"{}\" is not a valid type. Error: {}", message_type, e)),
         };
 
         // Build the message
@@ -324,8 +331,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
 
     // This allows [[key, value]] and [] since an empty hashmap is just []
     let json_content = if input_content.len() != 2 {
-        // This will deserialize as a unit enum
-        String::from("null")
+        String::from("[]")
     } else {
         let mut attributes: Vec<String> = Vec::new();
 
@@ -554,8 +560,8 @@ mod tests {
         expectation.add_error(ErrorType::Message, "this is another message");
 
         let result = Message::from_arma(
-            Type::Event,
             id.to_string(),
+            "event".into(),
             arma_value!([
                 arma_value!("test"),
                 arma_value!([arma_value!(["foo"]), arma_value!(["testing"])])
