@@ -119,7 +119,7 @@ pub struct Reward {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Sqf {
-    pub target_type: String,
+    pub execute_on: String,
     pub code: String,
 }
 
