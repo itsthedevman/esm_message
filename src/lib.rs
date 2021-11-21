@@ -345,7 +345,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         };
 
         for (index, key) in keys.iter().enumerate() {
-            let value = values.get(index).unwrap_or(&ArmaValue::Nil);
+            let mut value = values.get(index).unwrap_or(&ArmaValue::Nil).to_string();
 
             // Make sure the key is a string.
             let key = match key.as_str() {
@@ -353,7 +353,16 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
                 None => return Err(format!("The key {:?} can only be a string", key)),
             };
 
-            attributes.push(format!("\"{}\": {}", key, value.to_string().replace("\"\"", "\\\"")));
+            if value.starts_with('\"') && value.ends_with('\"') {
+                // Only process the inside, otherwise the outside quotes will be replaced
+                value = format!("\"{}\"", value[1..(value.len() - 1)].replace("\"\"", "\\\""));
+            }
+            else
+            {
+                value = value.replace("\"\"", "\\\"")
+            }
+
+            attributes.push(format!("\"{}\": {}", key, value));
         }
 
         // Build the Data JSON
@@ -548,11 +557,11 @@ mod tests {
         let mut expectation = Message::new(Type::Event);
         expectation.id = id;
         expectation.data = Data::Test(data::Test {
-            foo: "tes\"t\"ing".into(),
+            foo: "tes\"ting".into(),
         });
 
         expectation.metadata = Metadata::Test(metadata::Test {
-            foo: "test\"ing2".into(),
+            foo: "\"testing2\"".into(),
         });
 
         expectation.add_error(ErrorType::Message, "This is a message");
@@ -563,11 +572,11 @@ mod tests {
             "event".into(),
             arma_value!([
                 arma_value!("test"),
-                arma_value!([arma_value!(["foo"]), arma_value!(["tes\"t\"ing"])])
+                arma_value!([arma_value!(["foo"]), arma_value!(["tes\"ting"])])
             ]),
             arma_value!([
                 arma_value!("test"),
-                arma_value!([arma_value!(["foo"]), arma_value!(["test\"ing2"])])
+                arma_value!([arma_value!(["foo"]), arma_value!(["\"testing2\""])])
             ]),
             arma_value!(["This is a message", "this is another message"]),
         )
