@@ -353,7 +353,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
                 None => return Err(format!("The key {:?} can only be a string", key)),
             };
 
-            attributes.push(format!("\"{}\": {}", key, value));
+            attributes.push(format!("\"{}\": {}", key, value).replace("\"\"", "\""));
         }
 
         // Build the Data JSON
