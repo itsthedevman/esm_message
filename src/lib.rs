@@ -353,7 +353,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
                 None => return Err(format!("The key {:?} can only be a string", key)),
             };
 
-            attributes.push(format!("\"{}\": {}", key, value).replace("\"\"", "\""));
+            attributes.push(format!("\"{}\": {}", key, value.to_string().replace("\"\"", "\\\"")));
         }
 
         // Build the Data JSON
@@ -548,11 +548,11 @@ mod tests {
         let mut expectation = Message::new(Type::Event);
         expectation.id = id;
         expectation.data = Data::Test(data::Test {
-            foo: "testing".into(),
+            foo: "tes\"t\"ing".into(),
         });
 
         expectation.metadata = Metadata::Test(metadata::Test {
-            foo: "testing2".into(),
+            foo: "test\"ing2".into(),
         });
 
         expectation.add_error(ErrorType::Message, "This is a message");
@@ -563,11 +563,11 @@ mod tests {
             "event".into(),
             arma_value!([
                 arma_value!("test"),
-                arma_value!([arma_value!(["foo"]), arma_value!(["testing"])])
+                arma_value!([arma_value!(["foo"]), arma_value!(["tes\"t\"ing"])])
             ]),
             arma_value!([
                 arma_value!("test"),
-                arma_value!([arma_value!(["foo"]), arma_value!(["testing2"])])
+                arma_value!([arma_value!(["foo"]), arma_value!(["test\"ing2"])])
             ]),
             arma_value!(["This is a message", "this is another message"]),
         )
