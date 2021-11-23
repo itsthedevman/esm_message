@@ -125,7 +125,7 @@ pub struct Sqf {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct SqfResult {
-    pub result: Option<String>,
+    pub result: Option<ArmaValue>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
