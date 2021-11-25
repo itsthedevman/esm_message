@@ -34,9 +34,12 @@ pub enum Data {
     Query(Query),
     QueryResult(QueryResult),
 
+    // From Client
+    SendToChannel(SendToChannel),
+
     // Arma
     Reward(Reward),
-    SendToChannel(SendToChannel),
+    RewardResult(RewardResult),
     Sqf(Sqf),
     SqfResult(SqfResult),
 }
@@ -115,6 +118,11 @@ pub struct Reward {
     pub player_poptabs: NumberString,
     pub respect: NumberString,
     pub vehicles: Vec<ArmaHashMap>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+pub struct RewardResult {
+    pub receipt: ArmaHashMap,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
