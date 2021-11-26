@@ -317,7 +317,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
     };
 
     let input_content = match input.get(1) {
-        Some(v) => match v.as_vec() {
+        Some(v) => match v.as_hashmap() {
             Some(v) => v,
             None => return Err(format!("Failed to retrieve hashmap from {:?}", v)),
         },
@@ -329,30 +329,20 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         }
     };
 
+    // Handle empty content or an array containing the keys and values
     let json_content = if input_content.is_empty() {
         String::from("null")
     } else {
         let mut attributes: Vec<String> = Vec::new();
 
-        let keys = match input_content.get(0).unwrap().as_vec() {
-            Some(k) => k,
-            None => return Err(format!("Failed to extract keys from {:?}", input_content)),
-        };
-
-        let values = match input_content.get(1).unwrap().as_vec() {
-            Some(v) => v,
-            None => return Err(format!("Failed to extract values from {:?}", input_content)),
-        };
-
-        for (index, key) in keys.iter().enumerate() {
-            let mut value = values.get(index).unwrap_or(&ArmaValue::Nil).to_string();
-
+        for (key, value) in input_content {
             // Make sure the key is a string.
             let key = match key.as_str() {
                 Some(s) => s,
                 None => return Err(format!("The key {:?} can only be a string", key)),
             };
 
+            let mut value = value.to_string();
             if value.starts_with('\"') && value.ends_with('\"') {
                 // Only process the inside, otherwise the outside quotes will be replaced
                 value = format!("\"{}\"", value[1..(value.len() - 1)].replace("\"\"", "\\\""));
@@ -572,11 +562,11 @@ mod tests {
             "event".into(),
             arma_value!([
                 arma_value!("test"),
-                arma_value!([arma_value!(["foo"]), arma_value!(["tes\"ting"])])
+                arma_value!({ "foo" => "tes\"ting" })
             ]),
             arma_value!([
                 arma_value!("test"),
-                arma_value!([arma_value!(["foo"]), arma_value!(["\"testing2\""])])
+                arma_value!({ "foo" => "\"testing2\"" })
             ]),
             arma_value!(["This is a message", "this is another message"]),
         )
