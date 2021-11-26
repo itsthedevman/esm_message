@@ -60,6 +60,7 @@ impl ToArma for Data {
             Data::Query(q) => q.to_arma(),
             Data::QueryResult(qr) => qr.to_arma(),
             Data::Reward(r) => r.to_arma(),
+            Data::RewardResult(r) => r.to_arma(),
             Data::SendToChannel(d) => d.to_arma(),
             Data::Sqf(s) => s.to_arma(),
             Data::SqfResult(s) => s.to_arma(),
