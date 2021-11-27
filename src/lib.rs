@@ -142,7 +142,12 @@ impl Message {
         // Has to be double quoted
         let message_type: Type = match serde_json::from_str(&format!("\"{}\"", message_type)) {
             Ok(t) => t,
-            Err(e) => return Err(format!("\"{}\" is not a valid type. Error: {}", message_type, e)),
+            Err(e) => {
+                return Err(format!(
+                    "\"{}\" is not a valid type. Error: {}",
+                    message_type, e
+                ))
+            }
         };
 
         // Build the message
@@ -317,10 +322,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
     };
 
     let input_content = match input.get(1) {
-        Some(v) => match v.as_hashmap() {
-            Some(v) => v,
-            None => return Err(format!("Failed to retrieve hashmap from {:?}", v)),
-        },
+        Some(v) => v,
         None => {
             return Err(format!(
                 "Failed to retrieve item at index 1 from {:?}",
@@ -329,34 +331,51 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         }
     };
 
-    // Handle empty content or an array containing the keys and values
-    let json_content = if input_content.is_empty() {
-        String::from("null")
-    } else {
-        let mut attributes: Vec<String> = Vec::new();
-
-        for (key, value) in input_content {
-            // Make sure the key is a string.
-            let key = match key.as_str() {
-                Some(s) => s,
-                None => return Err(format!("The key {:?} can only be a string", key)),
-            };
-
-            let mut value = value.to_string();
-            if value.starts_with('\"') && value.ends_with('\"') {
-                // Only process the inside, otherwise the outside quotes will be replaced
-                value = format!("\"{}\"", value[1..(value.len() - 1)].replace("\"\"", "\\\""));
-            }
-            else
-            {
-                value = value.replace("\"\"", "\\\"")
-            }
-
-            attributes.push(format!("\"{}\": {}", key, value));
+    let sanitize_string = |value: String| -> String {
+        if value.starts_with('\"') && value.ends_with('\"') {
+            // Only process the inside, otherwise the outside quotes will be replaced
+            format!(
+                "\"{}\"",
+                value[1..(value.len() - 1)].replace("\"\"", "\\\"")
+            )
+        } else {
+            value.replace("\"\"", "\\\"")
         }
+    };
 
-        // Build the Data JSON
-        format!("{{ {} }}", attributes.join(","))
+    let json_content = match input_content {
+        ArmaValue::Nil => "null".to_string(),
+        ArmaValue::String(s) => format!("\"{}\"", sanitize_string(s.to_string())),
+        ArmaValue::Array(a) => {
+            if a.is_empty() {
+                "null".to_string()
+            } else {
+                format!(
+                    "[{}]",
+                    a.iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>()
+                        .join(",")
+                )
+            }
+        }
+        ArmaValue::HashMap(hash) => {
+            let mut attributes: Vec<String> = Vec::new();
+            for (key, value) in hash {
+                // Make sure the key is a string.
+                let key = match key.as_str() {
+                    Some(s) => s,
+                    None => return Err(format!("The key {:?} can only be a string", key)),
+                };
+
+                let value = sanitize_string(value.to_string());
+                attributes.push(format!("\"{}\": {}", key, value));
+            }
+
+            // Build the Data JSON
+            format!("{{ {} }}", attributes.join(","))
+        }
+        v => v.to_string(),
     };
 
     // Convert to JSON, this allows us to deserialize it as an actual type
@@ -560,10 +579,7 @@ mod tests {
         let result = Message::from_arma(
             id.to_string(),
             "event".into(),
-            arma_value!([
-                arma_value!("test"),
-                arma_value!({ "foo" => "tes\"ting" })
-            ]),
+            arma_value!([arma_value!("test"), arma_value!({ "foo" => "tes\"ting" })]),
             arma_value!([
                 arma_value!("test"),
                 arma_value!({ "foo" => "\"testing2\"" })
@@ -576,5 +592,54 @@ mod tests {
         assert_eq!(result.data, expectation.data);
         assert_eq!(result.metadata, expectation.metadata);
         assert_eq!(result.errors, expectation.errors);
+    }
+
+    #[test]
+    fn test_data_from_arma_value() {
+        #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+        #[serde(tag = "type", content = "content", rename_all = "snake_case")]
+        enum TestData {
+            Empty,
+            String(String),
+            Array((String, i32, bool)),
+            HashMap { key_1: String, key_2: bool, key_3: String },
+            Number(i32),
+            Boolean(bool)
+        }
+
+        let input = arma_value!(["empty", arma_value!([])]);
+        let result = data_from_arma_value::<TestData>(&input).unwrap();
+        assert_eq!(result, TestData::Empty);
+
+        let input = arma_value!(["string", "This \"\"String\"\" should be properly escaped"]);
+        let result = data_from_arma_value::<TestData>(&input).unwrap();
+        assert_eq!(
+            result,
+            TestData::String(String::from("This \"String\" should be properly escaped"))
+        );
+
+        let input = arma_value!(["array", arma_value!(["Foo", 15, false])]);
+        let result = data_from_arma_value::<TestData>(&input).unwrap();
+        assert_eq!(result, TestData::Array(("Foo".to_string(), 15, false)));
+
+        let input = arma_value!([
+            "hash_map",
+            arma_value!({
+                "key_1" => "value_1",
+                "key_2" => false,
+                "key_3" => "\"teehee\""
+            })
+        ]);
+
+        let result = data_from_arma_value::<TestData>(&input).unwrap();
+        assert_eq!(result, TestData::HashMap { key_1: "value_1".to_string(), key_2: false, key_3: "\"teehee\"".to_string() });
+
+        let input = arma_value!(["number", 32]);
+        let result = data_from_arma_value::<TestData>(&input).unwrap();
+        assert_eq!(result, TestData::Number(32));
+
+        let input = arma_value!(["boolean", false]);
+        let result = data_from_arma_value::<TestData>(&input).unwrap();
+        assert_eq!(result, TestData::Boolean(false));
     }
 }
