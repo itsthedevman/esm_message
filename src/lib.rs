@@ -393,6 +393,8 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
 }
 
 fn add_arma_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(), String> {
+    if input.is_empty() { return Ok(()) }
+
     // Convert to hashmap
     let errors = match input.as_vec() {
         Some(h) => h,
@@ -641,5 +643,18 @@ mod tests {
         let input = arma_value!(["boolean", false]);
         let result = data_from_arma_value::<TestData>(&input).unwrap();
         assert_eq!(result, TestData::Boolean(false));
+    }
+
+    #[test]
+    fn test_add_arma_errors_to_message() {
+        let mut message = Message::new(Type::Test);
+        assert!(add_arma_errors_to_message(&arma_value!({}), &mut message).is_ok());
+
+        assert!(message.errors.is_empty());
+
+        let mut message = Message::new(Type::Test);
+        assert!(add_arma_errors_to_message(&arma_value!(["hello", "world"]), &mut message).is_ok());
+
+        assert!(!message.errors.is_empty());
     }
 }
