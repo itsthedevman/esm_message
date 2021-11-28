@@ -112,11 +112,11 @@ pub struct PostInit {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Reward {
-    pub items: Vec<ArmaHashMap>,
-    pub locker_poptabs: NumberString,
-    pub player_poptabs: NumberString,
-    pub respect: NumberString,
-    pub vehicles: Vec<ArmaHashMap>,
+    pub items: Option<Vec<ArmaHashMap>>,
+    pub locker_poptabs: Option<NumberString>,
+    pub player_poptabs: Option<NumberString>,
+    pub respect: Option<NumberString>,
+    pub vehicles: Option<Vec<ArmaHashMap>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
