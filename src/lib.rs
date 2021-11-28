@@ -321,8 +321,11 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         }
     };
 
-    let input_content = match input.get(1) {
-        Some(v) => v,
+    let content = match input.get(1) {
+        Some(v) => match parse_arma_value(v) {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        },
         None => {
             return Err(format!(
                 "Failed to retrieve item at index 1 from {:?}",
@@ -331,6 +334,21 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         }
     };
 
+    // Convert to JSON, this allows us to deserialize it as an actual type
+    let json = format!(
+        r#"{{ "type": "{}", "content": {} }}"#,
+        input_type, content
+    );
+
+    let output: T = match serde_json::from_str(&json) {
+        Ok(t) => t,
+        Err(e) => return Err(format!("Attempted to parse {} but it is {}", json, e)),
+    };
+
+    Ok(output)
+}
+
+fn parse_arma_value(input: &ArmaValue) -> Result<String, String> {
     let sanitize_string = |value: String| -> String {
         if value.starts_with('\"') && value.ends_with('\"') {
             // Only process the inside, otherwise the outside quotes will be replaced
@@ -343,32 +361,29 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         }
     };
 
-    let json_content = match input_content {
+    let result = match input {
         ArmaValue::Nil => "null".to_string(),
-        ArmaValue::String(s) => format!("\"{}\"", sanitize_string(s.to_string())),
+        ArmaValue::String(_s) => sanitize_string(input.to_string()),
         ArmaValue::Array(a) => {
             if a.is_empty() {
                 "null".to_string()
             } else {
-                format!(
-                    "[{}]",
-                    a.iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>()
-                        .join(",")
-                )
+                input.to_string()
             }
         }
         ArmaValue::HashMap(hash) => {
             let mut attributes: Vec<String> = Vec::new();
             for (key, value) in hash {
-                // Make sure the key is a string.
                 let key = match key.as_str() {
-                    Some(s) => s,
-                    None => return Err(format!("The key {:?} can only be a string", key)),
+                    Some(k) => k,
+                    None => return Err(format!("Failed to convert key {} to string", key))
                 };
 
-                let value = sanitize_string(value.to_string());
+                let value = match parse_arma_value(value) {
+                    Ok(_v) => sanitize_string(value.to_string()),
+                    Err(e) => return Err(e),
+                };
+
                 attributes.push(format!("\"{}\": {}", key, value));
             }
 
@@ -378,18 +393,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         v => v.to_string(),
     };
 
-    // Convert to JSON, this allows us to deserialize it as an actual type
-    let json = format!(
-        r#"{{ "type": "{}", "content": {} }}"#,
-        input_type, json_content
-    );
-
-    let output: T = match serde_json::from_str(&json) {
-        Ok(t) => t,
-        Err(e) => return Err(format!("Attempted to parse {} but it is {}", json, e)),
-    };
-
-    Ok(output)
+    Ok(result)
 }
 
 fn add_arma_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(), String> {
@@ -613,12 +617,9 @@ mod tests {
         let result = data_from_arma_value::<TestData>(&input).unwrap();
         assert_eq!(result, TestData::Empty);
 
-        let input = arma_value!(["string", "This \"\"String\"\" should be properly escaped"]);
+        let input = arma_value!(["string", "This \"String\" should be properly escaped"]);
         let result = data_from_arma_value::<TestData>(&input).unwrap();
-        assert_eq!(
-            result,
-            TestData::String(String::from("This \"String\" should be properly escaped"))
-        );
+        assert_eq!(result, TestData::String(String::from("This \"String\" should be properly escaped")));
 
         let input = arma_value!(["array", arma_value!(["Foo", 15, false])]);
         let result = data_from_arma_value::<TestData>(&input).unwrap();
