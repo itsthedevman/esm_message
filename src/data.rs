@@ -123,7 +123,7 @@ pub struct Reward {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct RewardResult {
-    pub receipt: ArmaValue,
+    pub receipt: ArmaHashMap,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
