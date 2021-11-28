@@ -315,7 +315,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         },
         None => {
             return Err(format!(
-                "Failed to retrieve item at index 0 from {:?}",
+                "Failed to retrieve type from {:?}",
                 input
             ))
         }
@@ -328,7 +328,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
         },
         None => {
             return Err(format!(
-                "Failed to retrieve item at index 1 from {:?}",
+                "Failed to retrieve content from {:?}",
                 input
             ))
         }
@@ -370,7 +370,7 @@ fn parse_arma_value(input: &ArmaValue) -> Result<String, String> {
             } else {
                 input.to_string()
             }
-        }
+        },
         ArmaValue::HashMap(hash) => {
             let mut attributes: Vec<String> = Vec::new();
             for (key, value) in hash {
@@ -379,17 +379,17 @@ fn parse_arma_value(input: &ArmaValue) -> Result<String, String> {
                     None => return Err(format!("Failed to convert key {} to string", key))
                 };
 
-                let value = match parse_arma_value(value) {
-                    Ok(_v) => sanitize_string(value.to_string()),
+                let sanitized_value = match parse_arma_value(value) {
+                    Ok(v) => sanitize_string(v),
                     Err(e) => return Err(e),
                 };
 
-                attributes.push(format!("\"{}\": {}", key, value));
+                attributes.push(format!("\"{}\": {}", key, sanitized_value));
             }
 
             // Build the Data JSON
             format!("{{ {} }}", attributes.join(","))
-        }
+        },
         v => v.to_string(),
     };
 
@@ -602,13 +602,15 @@ mod tests {
 
     #[test]
     fn test_data_from_arma_value() {
+        use std::collections::HashMap;
+
         #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
         #[serde(tag = "type", content = "content", rename_all = "snake_case")]
         enum TestData {
             Empty,
             String(String),
             Array((String, i32, bool)),
-            HashMap { key_1: String, key_2: bool, key_3: String },
+            HashMap { key_1: String, key_2: bool, key_3: HashMap<String, String> },
             Number(i32),
             Boolean(bool)
         }
@@ -630,12 +632,16 @@ mod tests {
             arma_value!({
                 "key_1" => "value_1",
                 "key_2" => false,
-                "key_3" => "\"teehee\""
+                "key_3" => arma_value!({ "Hello" => "world", "foo" => "Bar" })
             })
         ]);
 
+        let mut hashmap = HashMap::new();
+        hashmap.insert("Hello".to_string(), "world".to_string());
+        hashmap.insert("foo".to_string(), "Bar".to_string());
+
         let result = data_from_arma_value::<TestData>(&input).unwrap();
-        assert_eq!(result, TestData::HashMap { key_1: "value_1".to_string(), key_2: false, key_3: "\"teehee\"".to_string() });
+        assert_eq!(result, TestData::HashMap { key_1: "value_1".to_string(), key_2: false, key_3: hashmap });
 
         let input = arma_value!(["number", 32]);
         let result = data_from_arma_value::<TestData>(&input).unwrap();
