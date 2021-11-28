@@ -39,7 +39,6 @@ pub enum Data {
 
     // Arma
     Reward(Reward),
-    RewardResult(RewardResult),
     Sqf(Sqf),
     SqfResult(SqfResult),
 }
@@ -60,7 +59,6 @@ impl ToArma for Data {
             Data::Query(q) => q.to_arma(),
             Data::QueryResult(qr) => qr.to_arma(),
             Data::Reward(r) => r.to_arma(),
-            Data::RewardResult(r) => r.to_arma(),
             Data::SendToChannel(d) => d.to_arma(),
             Data::Sqf(s) => s.to_arma(),
             Data::SqfResult(s) => s.to_arma(),
@@ -119,11 +117,6 @@ pub struct Reward {
     pub player_poptabs: NumberString,
     pub respect: NumberString,
     pub vehicles: Vec<ArmaHashMap>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
-pub struct RewardResult {
-    pub receipt: ArmaHashMap,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]

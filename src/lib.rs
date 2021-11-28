@@ -388,7 +388,7 @@ fn parse_arma_value(input: &ArmaValue) -> Result<String, String> {
             }
 
             // Build the Data JSON
-            format!("{{ {} }}", attributes.join(","))
+            format!("{{ {} }}", attributes.join(", "))
         },
         v => v.to_string(),
     };
