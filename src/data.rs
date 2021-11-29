@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use arma_rs::{ArmaValue, ToArma, arma_value, IntoArma};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::{NumberString, ArmaHashMap};
+use crate::NumberString;
 
 /// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
 /// Usage:
@@ -112,11 +112,11 @@ pub struct PostInit {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Reward {
-    pub items: Option<ArmaHashMap>,
+    pub items: Option<HashMap<String, NumberString>>,
     pub locker_poptabs: Option<NumberString>,
     pub player_poptabs: Option<NumberString>,
     pub respect: Option<NumberString>,
-    pub vehicles: Option<Vec<ArmaHashMap>>,
+    pub vehicles: Option<Vec<HashMap<String, String>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]

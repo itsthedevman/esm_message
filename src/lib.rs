@@ -19,8 +19,6 @@ pub use metadata::*;
 // Use this type for any numbers
 pub type NumberString = String;
 
-pub type ArmaHashMap = std::collections::HashMap<ArmaValue, ArmaValue>;
-
 /*
     {
         id: "",
