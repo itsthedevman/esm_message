@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::NumberString;
-use arma_rs::{arma_value, ArmaValue, IntoArma, ToArma};
+use arma_rs::{ArmaValue, ToArma, arma_value, IntoArma};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use crate::NumberString;
 
 /// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
 /// Usage:
@@ -13,11 +13,7 @@ macro_rules! retrieve_data {
     ($enum:expr, $module:ident::$type:ident) => {{
         let data = match &$enum {
             $module::$type(ref v) => v.clone(),
-            data => panic!(
-                "Unexpected type {:?}. Expected: {}.",
-                data,
-                stringify!($type)
-            ),
+            data => panic!("Unexpected type {:?}. Expected: {}.", data, stringify!($type))
         };
 
         data
@@ -72,7 +68,7 @@ impl ToArma for Data {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Test {
-    pub foo: String,
+    pub foo: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
@@ -84,7 +80,7 @@ pub struct Init {
     pub territory_data: String,
     pub territory_lifetime: NumberString,
     pub vg_enabled: bool,
-    pub vg_max_sizes: Vec<String>,
+    pub vg_max_sizes: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
@@ -178,17 +174,13 @@ pub struct SendToChannel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{data, metadata, Message, Metadata, Type};
+    use crate::{Message, Metadata, Type, data, metadata};
 
     #[test]
     fn test_retrieve_data() {
         let mut message = Message::new(Type::Test);
-        message.data = Data::Test(data::Test {
-            foo: "testing".into(),
-        });
-        message.metadata = Metadata::Test(metadata::Test {
-            foo: "testing".into(),
-        });
+        message.data = Data::Test(data::Test { foo: "testing".into() });
+        message.metadata = Metadata::Test(metadata::Test { foo: "testing".into() });
 
         let result = retrieve_data!(&message.data, Data::Test);
         assert_eq!(result.foo, String::from("testing"));
