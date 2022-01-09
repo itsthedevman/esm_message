@@ -12,7 +12,10 @@ pub struct Error {
 
 impl Error {
     pub fn new(error_type: ErrorType, error_content: String) -> Self {
-        Error { error_type, error_content }
+        Error {
+            error_type,
+            error_content,
+        }
     }
 }
 
@@ -23,5 +26,5 @@ pub enum ErrorType {
     Code,
 
     // Treats the error_message as a normal string
-    Message
+    Message,
 }

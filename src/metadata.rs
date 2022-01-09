@@ -1,12 +1,12 @@
+use arma_rs::{arma_value, ArmaValue, IntoArma, ToArma};
 use serde::{Deserialize, Serialize};
-use arma_rs::{ArmaValue, ToArma, IntoArma, arma_value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Metadata {
     Empty,
     Test(Test),
-    Command(Command)
+    Command(Command),
 }
 
 impl Default for Metadata {
@@ -27,7 +27,7 @@ impl ToArma for Metadata {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
 pub struct Test {
-    pub foo: String
+    pub foo: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]

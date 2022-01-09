@@ -311,12 +311,7 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
             Some(v) => v,
             None => return Err(format!("Failed to extract string from {:?}", v)),
         },
-        None => {
-            return Err(format!(
-                "Failed to retrieve type from {:?}",
-                input
-            ))
-        }
+        None => return Err(format!("Failed to retrieve type from {:?}", input)),
     };
 
     let content = match input.get(1) {
@@ -324,19 +319,11 @@ fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, Str
             Ok(v) => v,
             Err(e) => return Err(e),
         },
-        None => {
-            return Err(format!(
-                "Failed to retrieve content from {:?}",
-                input
-            ))
-        }
+        None => return Err(format!("Failed to retrieve content from {:?}", input)),
     };
 
     // Convert to JSON, this allows us to deserialize it as an actual type
-    let json = format!(
-        r#"{{ "type": "{}", "content": {} }}"#,
-        input_type, content
-    );
+    let json = format!(r#"{{ "type": "{}", "content": {} }}"#, input_type, content);
 
     let output: T = match serde_json::from_str(&json) {
         Ok(t) => t,
@@ -368,13 +355,13 @@ fn parse_arma_value(input: &ArmaValue) -> Result<String, String> {
             } else {
                 input.to_string()
             }
-        },
+        }
         ArmaValue::HashMap(hash) => {
             let mut attributes: Vec<String> = Vec::new();
             for (key, value) in hash {
                 let key = match key.as_str() {
                     Some(k) => k,
-                    None => return Err(format!("Failed to convert key {} to string", key))
+                    None => return Err(format!("Failed to convert key {} to string", key)),
                 };
 
                 let sanitized_value = match parse_arma_value(value) {
@@ -387,7 +374,7 @@ fn parse_arma_value(input: &ArmaValue) -> Result<String, String> {
 
             // Build the Data JSON
             format!("{{ {} }}", attributes.join(", "))
-        },
+        }
         v => v.to_string(),
     };
 
@@ -395,7 +382,9 @@ fn parse_arma_value(input: &ArmaValue) -> Result<String, String> {
 }
 
 fn add_arma_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(), String> {
-    if input.is_empty() { return Ok(()) }
+    if input.is_empty() {
+        return Ok(());
+    }
 
     // Convert to hashmap
     let errors = match input.as_vec() {
@@ -608,9 +597,13 @@ mod tests {
             Empty,
             String(String),
             Array((String, i32, bool)),
-            HashMap { key_1: String, key_2: bool, key_3: HashMap<String, String> },
+            HashMap {
+                key_1: String,
+                key_2: bool,
+                key_3: HashMap<String, String>,
+            },
             Number(i32),
-            Boolean(bool)
+            Boolean(bool),
         }
 
         let input = arma_value!(["empty", arma_value!([])]);
@@ -619,7 +612,10 @@ mod tests {
 
         let input = arma_value!(["string", "This \"String\" should be properly escaped"]);
         let result = data_from_arma_value::<TestData>(&input).unwrap();
-        assert_eq!(result, TestData::String(String::from("This \"String\" should be properly escaped")));
+        assert_eq!(
+            result,
+            TestData::String(String::from("This \"String\" should be properly escaped"))
+        );
 
         let input = arma_value!(["array", arma_value!(["Foo", 15, false])]);
         let result = data_from_arma_value::<TestData>(&input).unwrap();
@@ -639,7 +635,14 @@ mod tests {
         hashmap.insert("foo".to_string(), "Bar".to_string());
 
         let result = data_from_arma_value::<TestData>(&input).unwrap();
-        assert_eq!(result, TestData::HashMap { key_1: "value_1".to_string(), key_2: false, key_3: hashmap });
+        assert_eq!(
+            result,
+            TestData::HashMap {
+                key_1: "value_1".to_string(),
+                key_2: false,
+                key_3: hashmap
+            }
+        );
 
         let input = arma_value!(["number", 32]);
         let result = data_from_arma_value::<TestData>(&input).unwrap();
