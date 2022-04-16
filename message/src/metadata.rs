@@ -1,4 +1,4 @@
-use arma_rs::{IntoArma, Value as ArmaValue};
+use arma_rs::{FromArma, IntoArma, Value as ArmaValue};
 use message_proc::ImplIntoArma;
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +23,12 @@ impl IntoArma for Metadata {
             Metadata::Test(t) => t.to_arma(),
             Metadata::Command(c) => c.to_arma(),
         }
+    }
+}
+
+impl FromArma for Metadata {
+    fn from_arma(input: String) -> Result<Self, String> {
+        crate::parser::Parser::from_arma(input)
     }
 }
 

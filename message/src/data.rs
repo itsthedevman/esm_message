@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::NumberString;
-use arma_rs::{IntoArma, Value as ArmaValue};
+use arma_rs::{FromArma, IntoArma, Value as ArmaValue};
 use chrono::{DateTime, Utc};
 use message_proc::ImplIntoArma;
 use serde::{Deserialize, Serialize};
@@ -68,6 +68,12 @@ impl IntoArma for Data {
             Data::Sqf(s) => s.to_arma(),
             Data::SqfResult(s) => s.to_arma(),
         }
+    }
+}
+
+impl FromArma for Data {
+    fn from_arma(string: String) -> Result<Self, String> {
+        crate::parser::Parser::from_arma(string)
     }
 }
 
@@ -196,5 +202,20 @@ mod tests {
 
         let result = retrieve_data!(&message.metadata, Metadata::Test);
         assert_eq!(result.foo, String::from("testing"));
+    }
+
+    #[test]
+    fn test_from_arma() {
+        let data = vec!["test".to_arma(), vec![vec!["foo"], vec!["bar"]].to_arma()]
+            .to_arma()
+            .to_string();
+
+        match Data::from_arma(data) {
+            Ok(d) => match d {
+                Data::Test(t) => assert_eq!(t.foo, String::from("bar")),
+                t => panic!("Failed parse: {t:?}"),
+            },
+            Err(e) => panic!("{e}"),
+        }
     }
 }
