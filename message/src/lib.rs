@@ -1,13 +1,13 @@
 pub mod data;
 pub mod error;
 pub mod metadata;
+pub mod parser;
 
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use arma_rs::Value as ArmaValue;
+use arma_rs::{FromArma, Value as ArmaValue};
 use message_io::network::ResourceId;
 use rand::random;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -123,16 +123,16 @@ impl Message {
     pub fn from_arma(
         id: String,
         message_type: String,
-        data: ArmaValue,
-        metadata: ArmaValue,
-        errors: ArmaValue,
+        data: String,
+        metadata: String,
+        errors: String,
     ) -> Result<Message, String> {
-        let data: Data = match data_from_arma_value(&data) {
-            Ok(v) => v,
+        let data: Data = match Data::from_arma(data) {
+            Ok(d) => d,
             Err(e) => return Err(e),
         };
 
-        let metadata: Metadata = match data_from_arma_value(&metadata) {
+        let metadata: Metadata = match Metadata::from_arma(metadata) {
             Ok(v) => v,
             Err(e) => return Err(e),
         };
@@ -158,11 +158,13 @@ impl Message {
         message.data = data;
         message.metadata = metadata;
 
-        // Add the errors. They have to be converted differently
-        match add_arma_errors_to_message(&errors, &mut message) {
-            Ok(_) => Ok(message),
-            Err(e) => Err(e),
-        }
+        // // Add the errors. They have to be converted differently
+        // match add_arma_errors_to_message(&errors, &mut message) {
+        //     Ok(_) => Ok(message),
+        //     Err(e) => Err(e),
+        // }
+
+        Ok(message)
     }
 }
 
@@ -298,87 +300,6 @@ fn decrypt_message(bytes: Vec<u8>, server_key: &[u8]) -> Result<Message, String>
     message.server_id = Some(server_id);
 
     Ok(message)
-}
-
-fn data_from_arma_value<T: DeserializeOwned>(input: &ArmaValue) -> Result<T, String> {
-    let input = match input.as_vec() {
-        Some(v) => v,
-        None => return Err(format!("Failed to extract vec from {:?}", input)),
-    };
-
-    let input_type = match input.get(0) {
-        Some(v) => match v.as_str() {
-            Some(v) => v,
-            None => return Err(format!("Failed to extract string from {:?}", v)),
-        },
-        None => return Err(format!("Failed to retrieve type from {:?}", input)),
-    };
-
-    let content = match input.get(1) {
-        Some(v) => match parse_arma_value(v) {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        },
-        None => return Err(format!("Failed to retrieve content from {:?}", input)),
-    };
-
-    // Convert to JSON, this allows us to deserialize it as an actual type
-    let json = format!(r#"{{ "type": "{}", "content": {} }}"#, input_type, content);
-
-    let output: T = match serde_json::from_str(&json) {
-        Ok(t) => t,
-        Err(e) => return Err(format!("Attempted to parse {} but it is {}", json, e)),
-    };
-
-    Ok(output)
-}
-
-fn parse_arma_value(input: &ArmaValue) -> Result<String, String> {
-    let sanitize_string = |value: String| -> String {
-        if value.starts_with('\"') && value.ends_with('\"') {
-            // Only process the inside, otherwise the outside quotes will be replaced
-            format!(
-                "\"{}\"",
-                value[1..(value.len() - 1)].replace("\"\"", "\\\"")
-            )
-        } else {
-            value.replace("\"\"", "\\\"")
-        }
-    };
-
-    let result = match input {
-        ArmaValue::Null => "null".to_string(),
-        ArmaValue::String(_s) => sanitize_string(input.to_string()),
-        ArmaValue::Array(a) => {
-            if a.is_empty() {
-                "null".to_string()
-            } else {
-                input.to_string()
-            }
-        }
-        // ArmaValue::HashMap(hash) => {
-        //     let mut attributes: Vec<String> = Vec::new();
-        //     for (key, value) in hash {
-        //         let key = match key.as_str() {
-        //             Some(k) => k,
-        //             None => return Err(format!("Failed to convert key {} to string", key)),
-        //         };
-
-        //         let sanitized_value = match parse_arma_value(value) {
-        //             Ok(v) => sanitize_string(v),
-        //             Err(e) => return Err(e),
-        //         };
-
-        //         attributes.push(format!("\"{}\": {}", key, sanitized_value));
-        //     }
-
-        //     // Build the Data JSON
-        //     format!("{{ {} }}", attributes.join(", "))
-        // }
-        v => v.to_string(),
-    };
-
-    Ok(result)
 }
 
 fn add_arma_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(), String> {
