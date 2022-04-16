@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use crate::NumberString;
-use arma_rs::{arma_value, ArmaValue, IntoArma, ToArma};
+use arma_rs::{IntoArma, Value as ArmaValue};
 use chrono::{DateTime, Utc};
+use message_proc::ImplIntoArma;
 use serde::{Deserialize, Serialize};
 
 /// Attempts to retrieve a reference to the data. Panicking if the internal data does not match the provided type.
@@ -53,10 +54,10 @@ impl Default for Data {
     }
 }
 
-impl ToArma for Data {
+impl IntoArma for Data {
     fn to_arma(&self) -> ArmaValue {
         match self {
-            Data::Empty => arma_value!({}),
+            Data::Empty => ArmaValue::Null,
             Data::Test(t) => t.to_arma(),
             Data::Init(i) => i.to_arma(),
             Data::PostInit(pi) => pi.to_arma(),
@@ -70,12 +71,12 @@ impl ToArma for Data {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct Test {
     pub foo: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct Init {
     pub extension_version: String,
     pub price_per_object: NumberString,
@@ -87,7 +88,7 @@ pub struct Init {
     pub vg_max_sizes: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct PostInit {
     pub extdb_path: String,
     pub gambling_modifier: NumberString,
@@ -114,7 +115,7 @@ pub struct PostInit {
     pub territory_upgrade_tax: NumberString,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct Reward {
     pub items: Option<HashMap<String, NumberString>>,
     pub locker_poptabs: Option<NumberString>,
@@ -123,18 +124,18 @@ pub struct Reward {
     pub vehicles: Option<Vec<HashMap<String, String>>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct Sqf {
     pub execute_on: String,
     pub code: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct SqfResult {
     pub result: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct Event {
     pub event_type: String,
     pub triggered_at: DateTime<Utc>,
@@ -158,18 +159,18 @@ pub struct Event {
 // get_payment_count
 // increment_payment_counter
 // reset_payment_counter
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct Query {
     pub arguments: HashMap<String, String>,
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct QueryResult {
     pub results: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct SendToChannel {
     pub id: String,
     pub content: String,

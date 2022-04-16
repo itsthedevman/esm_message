@@ -1,4 +1,5 @@
-use arma_rs::{arma_value, ArmaValue, IntoArma, ToArma};
+use arma_rs::{IntoArma, Value as ArmaValue};
+use message_proc::ImplIntoArma;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -15,28 +16,28 @@ impl Default for Metadata {
     }
 }
 
-impl ToArma for Metadata {
+impl IntoArma for Metadata {
     fn to_arma(&self) -> ArmaValue {
         match self {
-            Metadata::Empty => arma_value!({}),
+            Metadata::Empty => ArmaValue::Null,
             Metadata::Test(t) => t.to_arma(),
             Metadata::Command(c) => c.to_arma(),
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct Test {
     pub foo: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct Command {
     pub player: Player,
     pub target: Option<Player>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, IntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
 pub struct Player {
     pub discord_id: Option<String>,
     pub discord_mention: Option<String>,
