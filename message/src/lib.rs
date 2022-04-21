@@ -111,14 +111,17 @@ impl Message {
     //      "id",
     //      "type",
     //      [
-    //          "data_type",
-    //          [["key", "value"], ["key", 2]]
+    //          ["type", "content"],
+    //          ["data_type", [["key_1", "key_2"], ["value_1", "value_2"]]
     //      ],
     //      [
-    //          "metadata_type",
-    //          [["key", "value"], ["key", true]]
+    //          ["type", "content"],
+    //          ["metadata_type", [["key_1", "key_2"], ["value_1", "value_2"]]
     //      ],
-    //      [["code", []], ["message", []]]
+    //      [
+    //          [["type", "content"], ["code", "1"]],
+    //          [["type", "content"], ["message", "This is an error"]]
+    //      ]
     //  ]
     pub fn from_arma(
         id: String,
@@ -127,19 +130,9 @@ impl Message {
         metadata: String,
         errors: String,
     ) -> Result<Message, String> {
-        let data: Data = match Data::from_arma(data) {
-            Ok(d) => d,
-            Err(e) => return Err(e),
-        };
-
-        let metadata: Metadata = match Metadata::from_arma(metadata) {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        };
-
-        // Has to be double quoted
-        let message_type: Type = match serde_json::from_str(&format!("\"{}\"", message_type)) {
-            Ok(t) => t,
+        // The message type has to be double quoted in order to parse
+        let mut message = match serde_json::from_str(&format!("\"{}\"", message_type)) {
+            Ok(t) => Self::new(t),
             Err(e) => {
                 return Err(format!(
                     "\"{}\" is not a valid type. Error: {}",
@@ -148,21 +141,25 @@ impl Message {
             }
         };
 
-        // Build the message
-        let mut message = Self::new(message_type);
-        message.id = match Uuid::parse_str(&id) {
-            Ok(uuid) => uuid,
+        match Uuid::parse_str(&id) {
+            Ok(uuid) => message.id = uuid,
             Err(e) => return Err(format!("Failed to extract ID from {:?}. {}", id, e)),
         };
 
-        message.data = data;
-        message.metadata = metadata;
+        match Data::from_arma(data) {
+            Ok(d) => message.data = d,
+            Err(e) => return Err(e),
+        };
 
-        // // Add the errors. They have to be converted differently
-        // match add_arma_errors_to_message(&errors, &mut message) {
-        //     Ok(_) => Ok(message),
-        //     Err(e) => Err(e),
-        // }
+        match Metadata::from_arma(metadata) {
+            Ok(d) => message.metadata = d,
+            Err(e) => return Err(e),
+        };
+
+        match Error::from_arma(errors) {
+            Ok(e) => message.errors = e,
+            Err(e) => return Err(e),
+        };
 
         Ok(message)
     }
@@ -300,32 +297,6 @@ fn decrypt_message(bytes: Vec<u8>, server_key: &[u8]) -> Result<Message, String>
     message.server_id = Some(server_id);
 
     Ok(message)
-}
-
-fn add_arma_errors_to_message(input: &ArmaValue, message: &mut Message) -> Result<(), String> {
-    if input.is_empty() {
-        return Ok(());
-    }
-
-    // Convert to hashmap
-    let errors = match input.as_vec() {
-        Some(h) => h,
-        None => return Err(format!("Failed to extract hashmap from {:?}", input)),
-    };
-
-    // Process "code" and "message" types
-    for error_message in errors {
-        // Own so ArmaValue doesn't have to be 'static
-        let error_message = match error_message.as_str() {
-            Some(s) => s.to_owned(),
-            None => return Err(format!("Failed to extract string from {:?}", error_message)),
-        };
-
-        // Finally, add the error to the message
-        message.add_error(ErrorType::Message, error_message);
-    }
-
-    Ok(())
 }
 
 #[cfg(test)]
