@@ -50,3 +50,30 @@ pub struct Player {
     pub discord_name: Option<String>,
     pub steam_uid: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::Parser;
+    use arma_rs::IntoArma;
+    use serde_json::json;
+
+    #[test]
+    fn it_converts_to_metadata_struct() {
+        let input = json!([
+            json!(["type", "content"]),
+            json!(["test", json!([json!(["foo"]), json!(["bar"])])])
+        ])
+        .to_arma()
+        .to_string();
+
+        let result: Result<Metadata, String> = Parser::from_arma(&input);
+
+        assert_eq!(
+            result.unwrap(),
+            Metadata::Test(Test {
+                foo: "bar".to_string()
+            })
+        );
+    }
+}
