@@ -73,7 +73,7 @@ impl IntoArma for Data {
 
 impl FromArma for Data {
     fn from_arma(string: String) -> Result<Self, String> {
-        crate::parser::Parser::from_arma(string)
+        crate::parser::Parser::from_arma(&string)
     }
 }
 

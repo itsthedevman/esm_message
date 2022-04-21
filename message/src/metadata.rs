@@ -28,7 +28,7 @@ impl IntoArma for Metadata {
 
 impl FromArma for Metadata {
     fn from_arma(input: String) -> Result<Self, String> {
-        crate::parser::Parser::from_arma(input)
+        crate::parser::Parser::from_arma(&input)
     }
 }
 

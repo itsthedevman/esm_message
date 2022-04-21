@@ -1,11 +1,11 @@
 use serde::de::DeserializeOwned;
-use serde_json::{json, Value as JSONValue};
+use serde_json::Value as JSONValue;
 
 pub struct Parser {}
 
 impl Parser {
-    pub fn from_arma<T: DeserializeOwned>(input: String) -> Result<T, String> {
-        let input: JSONValue = match serde_json::from_str(&input) {
+    pub fn from_arma<T: DeserializeOwned>(input: &str) -> Result<T, String> {
+        let input: JSONValue = match serde_json::from_str(input) {
             Ok(v) => v,
             Err(e) => {
                 return Err(format!(
@@ -14,55 +14,22 @@ impl Parser {
             }
         };
 
-        let input = match input.as_array() {
-            Some(a) => a,
-            None => {
-                return Err(format!(
-                    "[esm_message::parser::from_arma] Input is not of type Array. Input: {input:?}"
-                ))
-            }
-        };
-
-        let input_type = match input.get(0) {
-            Some(v) => match v.as_str() {
-                Some(v) => v,
-                None => {
-                    return Err(format!(
-                        "[esm_message::parser::from_arma] Failed to extract string from {v:?}"
-                    ))
-                }
-            },
-            None => {
-                return Err(format!("[esm_message::parser::from_arma] Failed to extract the \"type\" (index 0) from {input:?}"))
-            }
-        };
-
-        let input_content = match input.get(1) {
-            Some(v) => validate_content(v),
-            None => {
-                return Err(format!(
-                    "[esm_message::parser::from_arma] Failed to extract the \"content\" (index 1) from {input:?}"
-                ))
-            }
-        };
-
-        // Convert to JSON, this allows us to deserialize it as an actual type. It also validates the data more
-        let json = json!({ "type": input_type, "content": input_content });
+        let json = validate_content(&input);
         let json = match serde_json::to_string(&json) {
             Ok(j) => j,
-            Err(e) => return Err(format!("[esm_message::parser::from_arma] Failed to convert final json to string. Reason: {e}. Input: \"{json}\"")),
+            Err(e) => return Err(format!("[esm_message::parser::from_arma] Failed to convert to final JSON. Reason: {e}. Input: \"{input}\"")),
         };
 
         let output: T = match serde_json::from_str(&json) {
             Ok(t) => t,
-            Err(e) => return Err(format!("[esm_message::parser::from_arma] Failed to convert to Data. Reason: {e}. Input: \"{json}\" ")),
+            Err(e) => return Err(format!("[esm_message::parser::from_arma] Failed to convert to Data/Metadata. Reason: {e}. Input: \"{input}\" ")),
         };
 
         Ok(output)
     }
 }
 
-fn validate_content(input: &JSONValue) -> JSONValue {
+pub fn validate_content(input: &JSONValue) -> JSONValue {
     match input {
         JSONValue::Array(a) => match convert_arma_array_to_object(a) {
             Ok(v) => v,
@@ -107,4 +74,55 @@ fn convert_arma_array_to_object(input: &Vec<JSONValue>) -> Result<JSONValue, Str
     }
 
     Ok(JSONValue::Object(object))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{data, Data};
+    use arma_rs::IntoArma;
+    use serde_json::json;
+
+    #[test]
+    fn it_converts_arma_hash_correctly() {
+        let input = json!([
+            json!(["key_1", "key_2", "key_3", "key_4"]),
+            json!([
+                "value_1",
+                2_i32,
+                true,
+                vec![json!(["sub_key_1"]), json!(["sub_value_1"])]
+            ])
+        ]);
+
+        let result = validate_content(&input);
+        assert_eq!(
+            result,
+            json!({
+                "key_1": json!("value_1"),
+                "key_2": json!(2_i32),
+                "key_3": json!(true),
+                "key_4": json!({ "sub_key_1": "sub_value_1" })
+            })
+        )
+    }
+
+    #[test]
+    fn it_converts_to_data_struct() {
+        let input = json!([
+            json!(["type", "content"]),
+            json!(["test", json!([json!(["foo"]), json!(["bar"])])])
+        ])
+        .to_arma()
+        .to_string();
+
+        let result: Result<Data, String> = Parser::from_arma(&input);
+
+        assert_eq!(
+            result.unwrap(),
+            Data::Test(data::Test {
+                foo: "bar".to_string()
+            })
+        );
+    }
 }
