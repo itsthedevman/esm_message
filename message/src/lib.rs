@@ -5,7 +5,7 @@ pub mod parser;
 
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use arma_rs::{FromArma, Value as ArmaValue};
+use arma_rs::FromArma;
 use message_io::network::ResourceId;
 use rand::random;
 use serde::{Deserialize, Serialize};
@@ -301,11 +301,13 @@ fn decrypt_message(bytes: Vec<u8>, server_key: &[u8]) -> Result<Message, String>
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
     use crate::data::Init;
 
     #[test]
-    fn encrypt_and_decrypt_message() {
+    fn test_encrypt_and_decrypt_message() {
         let mut message = Message::new(Type::Connect);
 
         let server_init = Init {
@@ -440,119 +442,51 @@ mod tests {
         assert!(message.errors.is_empty());
     }
 
-    // #[test]
-    // fn test_from_str() {
-    //     use data::Data;
+    #[test]
+    fn test_from_str() {
+        use data::Data;
 
-    //     let id = Uuid::new_v4();
+        let id = Uuid::new_v4();
+        let mut expectation = Message::new(Type::Event);
+        expectation.id = id;
+        expectation.data = Data::Test(data::Test {
+            foo: "tes\"ting".into(),
+        });
 
-    //     let mut expectation = Message::new(Type::Event);
-    //     expectation.id = id;
-    //     expectation.data = Data::Test(data::Test {
-    //         foo: "tes\"ting".into(),
-    //     });
+        expectation.metadata = Metadata::Test(metadata::Test {
+            foo: "\"testing2\"".into(),
+        });
 
-    //     expectation.metadata = Metadata::Test(metadata::Test {
-    //         foo: "\"testing2\"".into(),
-    //     });
+        expectation.add_error(ErrorType::Message, "This is a message");
+        expectation.add_error(ErrorType::Code, "CODING");
 
-    //     expectation.add_error(ErrorType::Message, "This is a message");
-    //     expectation.add_error(ErrorType::Message, "this is another message");
+        let result = Message::from_arma(
+            id.to_string(),
+            "event".into(),
+            json!([
+                json!(["type", "content"]),
+                json!([json!("test"), json!({ "foo": "tes\"ting" })])
+            ])
+            .to_string(),
+            json!([
+                json!(["type", "content"]),
+                json!([json!("test"), json!({ "foo": "\"testing2\"" })])
+            ])
+            .to_string(),
+            json!([
+                json!([
+                    json!(["type", "content"]),
+                    json!(["message", "This is a message"])
+                ]),
+                json!([json!(["type", "content"]), json!(["code", "CODING"])])
+            ])
+            .to_string(),
+        )
+        .unwrap();
 
-    //     let result = Message::from_arma(
-    //         id.to_string(),
-    //         "event".into(),
-    //         arma_value!([arma_value!("test"), arma_value!({ "foo" => "tes\"ting" })]),
-    //         arma_value!([
-    //             arma_value!("test"),
-    //             arma_value!({ "foo" => "\"testing2\"" })
-    //         ]),
-    //         arma_value!(["This is a message", "this is another message"]),
-    //     )
-    //     .unwrap();
-
-    //     assert_eq!(result.id, expectation.id);
-    //     assert_eq!(result.data, expectation.data);
-    //     assert_eq!(result.metadata, expectation.metadata);
-    //     assert_eq!(result.errors, expectation.errors);
-    // }
-
-    // #[test]
-    // fn test_data_from_arma_value() {
-    //     use std::collections::HashMap;
-
-    //     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-    //     #[serde(tag = "type", content = "content", rename_all = "snake_case")]
-    //     enum TestData {
-    //         Empty,
-    //         String(String),
-    //         Array((String, i32, bool)),
-    //         HashMap {
-    //             key_1: String,
-    //             key_2: bool,
-    //             key_3: HashMap<String, String>,
-    //         },
-    //         Number(i32),
-    //         Boolean(bool),
-    //     }
-
-    //     let input = arma_value!(["empty", arma_value!([])]);
-    //     let result = data_from_arma_value::<TestData>(&input).unwrap();
-    //     assert_eq!(result, TestData::Empty);
-
-    //     let input = arma_value!(["string", "This \"String\" should be properly escaped"]);
-    //     let result = data_from_arma_value::<TestData>(&input).unwrap();
-    //     assert_eq!(
-    //         result,
-    //         TestData::String(String::from("This \"String\" should be properly escaped"))
-    //     );
-
-    //     let input = arma_value!(["array", arma_value!(["Foo", 15, false])]);
-    //     let result = data_from_arma_value::<TestData>(&input).unwrap();
-    //     assert_eq!(result, TestData::Array(("Foo".to_string(), 15, false)));
-
-    //     let input = arma_value!([
-    //         "hash_map",
-    //         arma_value!({
-    //             "key_1" => "value_1",
-    //             "key_2" => false,
-    //             "key_3" => arma_value!({ "Hello" => "world", "foo" => "Bar" })
-    //         })
-    //     ]);
-
-    //     let mut hashmap = HashMap::new();
-    //     hashmap.insert("Hello".to_string(), "world".to_string());
-    //     hashmap.insert("foo".to_string(), "Bar".to_string());
-
-    //     let result = data_from_arma_value::<TestData>(&input).unwrap();
-    //     assert_eq!(
-    //         result,
-    //         TestData::HashMap {
-    //             key_1: "value_1".to_string(),
-    //             key_2: false,
-    //             key_3: hashmap
-    //         }
-    //     );
-
-    //     let input = arma_value!(["number", 32]);
-    //     let result = data_from_arma_value::<TestData>(&input).unwrap();
-    //     assert_eq!(result, TestData::Number(32));
-
-    //     let input = arma_value!(["boolean", false]);
-    //     let result = data_from_arma_value::<TestData>(&input).unwrap();
-    //     assert_eq!(result, TestData::Boolean(false));
-    // }
-
-    // #[test]
-    // fn test_add_arma_errors_to_message() {
-    //     let mut message = Message::new(Type::Test);
-    //     assert!(add_arma_errors_to_message(&arma_value!({}), &mut message).is_ok());
-
-    //     assert!(message.errors.is_empty());
-
-    //     let mut message = Message::new(Type::Test);
-    //     assert!(add_arma_errors_to_message(&arma_value!(["hello", "world"]), &mut message).is_ok());
-
-    //     assert!(!message.errors.is_empty());
-    // }
+        assert_eq!(result.id, expectation.id);
+        assert_eq!(result.data, expectation.data);
+        assert_eq!(result.metadata, expectation.metadata);
+        assert_eq!(result.errors, expectation.errors);
+    }
 }
