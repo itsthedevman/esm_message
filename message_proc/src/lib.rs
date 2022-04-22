@@ -4,7 +4,7 @@ use syn::DeriveInput;
 
 #[proc_macro_derive(ImplIntoArma)]
 /// Creates the to_arma function based on the attributes for this struct
-pub fn derive_to_arma(input: TokenStream) -> TokenStream {
+pub fn derive_into_arma(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as DeriveInput);
 
     let name = &input.ident;
@@ -15,7 +15,7 @@ pub fn derive_to_arma(input: TokenStream) -> TokenStream {
 
     let data = match data {
         syn::Data::Struct(data) => data,
-        _ => panic!("IntoArma is only available for Structs"),
+        _ => panic!("ImplIntoArma is only available for Structs"),
     };
 
     // Get all the struct fields
@@ -30,17 +30,20 @@ pub fn derive_to_arma(input: TokenStream) -> TokenStream {
         arguments.push(field.ident.as_ref().unwrap().to_owned());
     }
 
-    // Builds the ToArma implementation
+    // Builds the IntoArma implementation
     let expanded = quote! {
         impl arma_rs::IntoArma for #struct_name {
             fn to_arma(&self) -> arma_rs::Value {
-                let mut vec: Vec<arma_rs::Value> = Vec::new();
+                let mut keys: Vec<arma_rs::Value> = Vec::new();
+                let mut values: Vec<arma_rs::Value> = Vec::new();
 
                 #(
-                    vec.push(vec![stringify!(#arguments).to_arma(), self.#arguments.to_arma()].to_arma());
+                    keys.push(stringify!(#arguments).to_arma());
+                    values.push(self.#arguments.to_arma());
                 )*
 
-                vec.to_arma()
+                let hash: Vec<Vec<arma_rs::Value>> = vec![keys, values];
+                hash.to_arma()
             }
         }
     };

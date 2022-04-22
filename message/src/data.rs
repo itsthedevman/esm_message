@@ -203,4 +203,12 @@ mod tests {
         let result = retrieve_data!(&message.metadata, Metadata::Test);
         assert_eq!(result.foo, String::from("testing"));
     }
+
+    #[test]
+    fn test_to_arma() {
+        let data = Test {
+            foo: "bar".to_string(),
+        };
+        assert_eq!(data.to_arma().to_string(), "[[\"foo\"],[\"bar\"]]");
+    }
 }
