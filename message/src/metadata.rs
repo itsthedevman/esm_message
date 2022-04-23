@@ -76,4 +76,22 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn it_converts_to_arma() {
+        let command = Command {
+            player: Player {
+                discord_id: Some(String::from("id")),
+                discord_mention: Some(String::from("mention")),
+                discord_name: Some(String::from("name")),
+                steam_uid: String::from("steam_uid"),
+            },
+            target: None,
+        };
+
+        assert_eq!(
+            command.to_arma().to_string(),
+            "[[\"player\",\"target\"],[[[\"discord_id\",\"discord_mention\",\"discord_name\",\"steam_uid\"],[\"id\",\"mention\",\"name\",\"steam_uid\"]],null]]"
+        );
+    }
 }
