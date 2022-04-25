@@ -5,7 +5,9 @@ pub struct Parser {}
 
 impl Parser {
     pub fn from_arma<T: DeserializeOwned>(input: &str) -> Result<T, String> {
-        let input: JSONValue = match serde_json::from_str(input) {
+        let input = input.to_string().replace("\"\"", "\\\"");
+
+        let input: JSONValue = match serde_json::from_str(&input) {
             Ok(v) => v,
             Err(e) => {
                 return Err(format!(
@@ -122,6 +124,20 @@ mod tests {
             result.unwrap(),
             Data::Test(data::Test {
                 foo: "bar".to_string()
+            })
+        );
+    }
+
+    #[test]
+    fn it_handles_escaped_strings() {
+        let input = "[[\"type\",\"content\"],[\"sqf_result\",[[\"result\"],[\"[[\"\"key_1\"\",\"\"value_1\"\"],[\"\"key_2\"\",true],[\"\"key_3\"\",[[\"\"key_4\"\",false],[\"\"key_5\"\",[[\"\"key_6\"\",6],[\"\"key_7\"\",<null>]]]]]]\"]]]]";
+
+        let result: Result<Data, String> = Parser::from_arma(input);
+
+        assert_eq!(
+            result.unwrap(),
+            Data::SqfResult(data::SqfResult {
+                result: Some("[[\"key_1\",\"value_1\"],[\"key_2\",true],[\"key_3\",[[\"key_4\",false],[\"key_5\",[[\"key_6\",6],[\"key_7\",<null>]]]]]]".to_string())
             })
         );
     }
