@@ -454,7 +454,7 @@ mod tests {
         });
 
         expectation.metadata = Metadata::Test(metadata::Test {
-            foo: "\"testing2\"".into(),
+            foo: "\"testing2\" - \"\"nested\"\"".into(),
         });
 
         expectation.add_error(ErrorType::Message, "This is a message");
@@ -464,21 +464,24 @@ mod tests {
             id.to_string(),
             "event".into(),
             json!([
-                json!(["type", "content"]),
-                json!([json!("test"), json!({ "foo": "tes\"ting" })])
+                json!(["type", json!("test")]),
+                json!(["content", json!([json!(["foo", "tes\"ting"])])])
             ])
             .to_string(),
             json!([
-                json!(["type", "content"]),
-                json!([json!("test"), json!({ "foo": "\"testing2\"" })])
+                json!(["type", json!("test")]),
+                json!([
+                    "content",
+                    json!([json!(["foo", "\"testing2\" - \"\"nested\"\""])])
+                ])
             ])
             .to_string(),
             json!([
                 json!([
-                    json!(["type", "content"]),
-                    json!(["message", "This is a message"])
+                    json!(["type", "message"]),
+                    json!(["content", "This is a message"])
                 ]),
-                json!([json!(["type", "content"]), json!(["code", "CODING"])])
+                json!([json!(["type", "code"]), json!(["content", "CODING"])])
             ])
             .to_string(),
         )

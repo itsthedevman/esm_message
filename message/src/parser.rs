@@ -5,7 +5,7 @@ pub struct Parser {}
 
 impl Parser {
     pub fn from_arma<T: DeserializeOwned>(input: &str) -> Result<T, String> {
-        let input = input.to_string().replace("\"\"", "\\\"");
+        let input = input.replace("\"\"", "\\\"");
 
         let input: JSONValue = match serde_json::from_str(&input) {
             Ok(v) => v,
@@ -42,37 +42,34 @@ pub fn validate_content(input: &JSONValue) -> JSONValue {
 }
 
 fn convert_arma_array_to_object(input: &Vec<JSONValue>) -> Result<JSONValue, String> {
-    if input.len() != 2 || !input.iter().all(|i| i.is_array()) {
-        return Err(format!("[esm_message::parser::convert_arma_array_to_object] Input must contain exactly 2 Arrays. Input: {input:?}"));
-    }
-
-    let key_array = match input.get(0) {
-        Some(a) => a.as_array().unwrap(),
-        None => {
-            return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to extract key array from {input:?}"));
-        }
-    };
-
-    let value_array = match input.get(1) {
-        Some(a) => a.as_array().unwrap(),
-        None => {
-            return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to extract value array from {input:?}"));
-        }
-    };
-
-    if !key_array.iter().all(|i| i.is_string()) {
-        return Err(format!("[esm_message::parser::convert_arma_array_to_object] All elements must be Strings in key array {key_array:?}"));
-    }
-
-    if key_array.len() < value_array.len() {
-        return Err(format!("[esm_message::parser::convert_arma_array_to_object] Missing keys! # of keys: {}, # of values: {}", key_array.len(), value_array.len()));
+    if !input
+        .iter()
+        .all(|i| i.is_array() && i.as_array().unwrap().len() == 2)
+    {
+        return Err(format!("[esm_message::parser::convert_arma_array_to_object] Input must consist of key/value pairs. Input: {input:?}"));
     }
 
     let mut object = serde_json::map::Map::new();
-    for (index, key) in key_array.iter().enumerate() {
-        let value = value_array.get(index).unwrap_or(&JSONValue::Null);
+    for pair in input {
+        let pair = match pair.as_array() {
+            Some(a) => a,
+            None => return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to convert key/value pair. Pair: {pair:?}")),
+        };
 
-        object.insert(key.as_str().unwrap().to_string(), validate_content(value));
+        let key = match pair.get(0) {
+            Some(k) => match k.as_str() {
+                Some(k) => k,
+                None => return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to convert key to string. Pair: {pair:?}"))
+            },
+            None => return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to extract key from {pair:?}"))
+        };
+
+        let value = match pair.get(1) {
+            Some(v) => v,
+            None => return Err(format!("[esm_message::parser::convert_arma_array_to_object] Failed to extract value from {pair:?}"))
+        };
+
+        object.insert(key.to_string(), validate_content(value));
     }
 
     Ok(JSONValue::Object(object))
@@ -88,13 +85,10 @@ mod tests {
     #[test]
     fn it_converts_arma_hash_correctly() {
         let input = json!([
-            json!(["key_1", "key_2", "key_3", "key_4"]),
-            json!([
-                "value_1",
-                2_i32,
-                true,
-                vec![json!(["sub_key_1"]), json!(["sub_value_1"])]
-            ])
+            json!(["key_1", "value_1"]),
+            json!(["key_2", 2_i32]),
+            json!(["key_3", true]),
+            json!(["key_4", vec![json!(["sub_key_1", "sub_value_1"])]])
         ]);
 
         let result = validate_content(&input);
@@ -112,8 +106,8 @@ mod tests {
     #[test]
     fn it_converts_to_data_struct() {
         let input = json!([
-            json!(["type", "content"]),
-            json!(["test", json!([json!(["foo"]), json!(["bar"])])])
+            json!(["type", "test"]),
+            json!(["content", json!([json!(["foo", "bar"])])])
         ])
         .to_arma()
         .to_string();
@@ -130,7 +124,7 @@ mod tests {
 
     #[test]
     fn it_handles_escaped_strings() {
-        let input = "[[\"type\",\"content\"],[\"sqf_result\",[[\"result\"],[\"[[\"\"key_1\"\",\"\"value_1\"\"],[\"\"key_2\"\",true],[\"\"key_3\"\",[[\"\"key_4\"\",false],[\"\"key_5\"\",[[\"\"key_6\"\",6],[\"\"key_7\"\",<null>]]]]]]\"]]]]";
+        let input = "[[\"type\",\"sqf_result\"],[\"content\",[[\"result\",\"[[\"\"key_1\"\",\"\"value_1\"\"],[\"\"key_2\"\",true],[\"\"key_3\"\",[[\"\"key_4\"\",false],[\"\"key_5\"\",[[\"\"key_6\"\",6],[\"\"key_7\"\",<null>]]]]]]\"]]]]";
 
         let result: Result<Data, String> = Parser::from_arma(input);
 

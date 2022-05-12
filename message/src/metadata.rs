@@ -61,8 +61,8 @@ mod tests {
     #[test]
     fn it_converts_to_metadata_struct() {
         let input = json!([
-            json!(["type", "content"]),
-            json!(["test", json!([json!(["foo"]), json!(["bar"])])])
+            json!(["type", "test"]),
+            json!(["content", json!([json!(["foo", "bar"])])])
         ])
         .to_arma()
         .to_string();
@@ -91,7 +91,7 @@ mod tests {
 
         assert_eq!(
             command.to_arma().to_string(),
-            "[[\"player\",\"target\"],[[[\"discord_id\",\"discord_mention\",\"discord_name\",\"steam_uid\"],[\"id\",\"mention\",\"name\",\"steam_uid\"]],null]]"
+            "[[\"player\",[[\"discord_id\",\"id\"],[\"discord_mention\",\"mention\"],[\"discord_name\",\"name\"],[\"steam_uid\",\"steam_uid\"]]],[\"target\",null]]"
         );
     }
 }

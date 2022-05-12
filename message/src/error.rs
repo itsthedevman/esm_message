@@ -72,10 +72,10 @@ mod tests {
     #[test]
     fn it_converts_to_error_vec() {
         let input = json!([
-            json!([json!(["type", "content"]), json!(["code", "SOME_CODE"]),]),
+            json!([json!(["type", "code"]), json!(["content", "SOME_CODE"]),]),
             json!([
-                json!(["type", "content"]),
-                json!(["message", "This is some message"])
+                json!(["type", "message"]),
+                json!(["content", "This is some message"])
             ])
         ])
         .to_arma()

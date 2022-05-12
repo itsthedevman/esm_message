@@ -34,16 +34,13 @@ pub fn derive_into_arma(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         impl arma_rs::IntoArma for #struct_name {
             fn to_arma(&self) -> arma_rs::Value {
-                let mut keys: Vec<arma_rs::Value> = Vec::new();
-                let mut values: Vec<arma_rs::Value> = Vec::new();
+                let mut vec: Vec<Vec<arma_rs::Value>> = Vec::new();
 
                 #(
-                    keys.push(stringify!(#arguments).to_arma());
-                    values.push(self.#arguments.to_arma());
+                    vec.push(vec![stringify!(#arguments).to_arma(), self.#arguments.to_arma()]);
                 )*
 
-                let hash: Vec<Vec<arma_rs::Value>> = vec![keys, values];
-                hash.to_arma()
+                vec.to_arma()
             }
         }
     };
