@@ -450,11 +450,11 @@ mod tests {
         let mut expectation = Message::new(Type::Event);
         expectation.id = id;
         expectation.data = Data::Test(data::Test {
-            foo: "tes\"ting".into(),
+            foo: "tes\"\"ting".into(),
         });
 
         expectation.metadata = Metadata::Test(metadata::Test {
-            foo: "\"testing2\" - \"\"nested\"\"".into(),
+            foo: "\"\"testing2\"\" - \"\"nested\"\"".into(),
         });
 
         expectation.add_error(ErrorType::Message, "This is a message");
@@ -465,14 +465,14 @@ mod tests {
             "event".into(),
             json!([
                 json!(["type", json!("test")]),
-                json!(["content", json!([json!(["foo", "tes\"ting"])])])
+                json!(["content", json!([json!(["foo", "tes\"\"ting"])])])
             ])
             .to_string(),
             json!([
                 json!(["type", json!("test")]),
                 json!([
                     "content",
-                    json!([json!(["foo", "\"testing2\" - \"\"nested\"\""])])
+                    json!([json!(["foo", "\"\"testing2\"\" - \"\"nested\"\""])])
                 ])
             ])
             .to_string(),
