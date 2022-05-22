@@ -1,17 +1,18 @@
 use serde::de::DeserializeOwned;
 use serde_json::Value as JSONValue;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub struct Parser {}
 
 impl Parser {
     pub fn from_arma<T: DeserializeOwned>(input: &str) -> Result<T, String> {
-        let input = input.replace("\"\"", "\\\"");
+        let input = replace_arma_escape_characters(input);
 
         let input: JSONValue = match serde_json::from_str(&input) {
             Ok(v) => v,
             Err(e) => {
                 return Err(format!(
-                    "[esm_message::parser::from_arma] Failed to convert input into JSONValue. Reason: {e}. Input: {input:?}"
+                    "[esm_message::parser::from_arma] Failed to convert input into JSONValue. Reason: {e}. Input: {input}"
                 ))
             }
         };
@@ -73,6 +74,60 @@ fn convert_arma_array_to_object(input: &Vec<JSONValue>) -> Result<JSONValue, Str
     }
 
     Ok(JSONValue::Object(object))
+}
+
+fn replace_arma_escape_characters(input: &str) -> String {
+    let str_terminators = ["[", "]", ","];
+    let mut new_string_chars: Vec<String> = Vec::new();
+    let mut in_string = false;
+    let mut quote_series_counter = 1_usize;
+
+    let chars = input.graphemes(true).collect::<Vec<&str>>();
+    for (index, current_char) in chars.iter().enumerate() {
+        // This skips over the extra quotes in a series
+        if quote_series_counter.saturating_sub(1) > 0 {
+            quote_series_counter = quote_series_counter.saturating_sub(1);
+            continue;
+        };
+
+        let mut char_to_add = current_char.to_string();
+        let previous_char = chars.get(index.saturating_sub(1)).unwrap_or(&"");
+        let next_char = chars.get(index.saturating_add(1)).unwrap_or(&"");
+
+        if current_char.eq(&"\"") {
+            if str_terminators.contains(previous_char) && !in_string {
+                in_string = true;
+            } else if str_terminators.contains(next_char) && in_string {
+                in_string = false;
+            } else if in_string {
+                // Detect how many double quotes are in this series and replace them with escape characters
+                for char in &chars[(index + 1)..] {
+                    if !char.eq(&"\"") {
+                        break;
+                    }
+
+                    quote_series_counter = quote_series_counter.saturating_add(1);
+                }
+
+                // There can only ever be a equal number of quotes to escape
+                // This handles an ending series of quotes -> """tada"""
+                if (quote_series_counter % 2) != 0 {
+                    quote_series_counter = quote_series_counter.saturating_sub(1);
+                }
+
+                char_to_add = format!("{}\"", "\\".repeat(quote_series_counter.saturating_sub(1)));
+            }
+        }
+
+        // Handles escaping the escape characters
+        if current_char.eq(&"\\") && !next_char.eq(&"\\") {
+            char_to_add = "\\\\".into();
+        }
+
+        new_string_chars.push(char_to_add);
+    }
+
+    new_string_chars.join("")
 }
 
 #[cfg(test)]

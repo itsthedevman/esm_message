@@ -450,11 +450,11 @@ mod tests {
         let mut expectation = Message::new(Type::Event);
         expectation.id = id;
         expectation.data = Data::Test(data::Test {
-            foo: "tes\"\"ting".into(),
+            foo: "test\"ing".into(),
         });
 
         expectation.metadata = Metadata::Test(metadata::Test {
-            foo: "\"\"testing2\"\" - \"\"nested\"\"".into(),
+            foo: "\"testing\" \\(* \\\\\" *)/ - \"nested\"".into(),
         });
 
         expectation.add_error(ErrorType::Message, "This is a message");
@@ -463,26 +463,11 @@ mod tests {
         let result = Message::from_arma(
             id.to_string(),
             "event".into(),
-            json!([
-                json!(["type", json!("test")]),
-                json!(["content", json!([json!(["foo", "tes\"\"ting"])])])
-            ])
+            r#"[["type","test"],["content",[["foo","test""ing"]]]]"#
             .to_string(),
-            json!([
-                json!(["type", json!("test")]),
-                json!([
-                    "content",
-                    json!([json!(["foo", "\"\"testing2\"\" - \"\"nested\"\""])])
-                ])
-            ])
+            r#"[["type","test"],["content",[["foo","""testing"" \(* """""" *)/ - ""nested"""]]]]"#
             .to_string(),
-            json!([
-                json!([
-                    json!(["type", "message"]),
-                    json!(["content", "This is a message"])
-                ]),
-                json!([json!(["type", "code"]), json!(["content", "CODING"])])
-            ])
+            r#"[[["type","message"],["content","This is a message"]],[["type","code"],["content","CODING"]]]"#
             .to_string(),
         )
         .unwrap();
