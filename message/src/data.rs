@@ -209,6 +209,20 @@ mod tests {
         let data = Test {
             foo: "bar".to_string(),
         };
-        assert_eq!(data.to_arma().to_string(), "[[\"foo\"],[\"bar\"]]");
+
+        assert_eq!(data.to_arma().to_string(), "[[\"foo\",\"bar\"]]");
+
+        let mut items = HashMap::new();
+        items.insert("key_1".to_string(), "value_1".to_string());
+
+        let data = Reward {
+            items: Some(items),
+            locker_poptabs: Some("1".to_string()),
+            player_poptabs: Some("3".to_string()),
+            respect: Some("2".to_string()),
+            vehicles: None,
+        };
+
+        assert_eq!(data.to_arma().to_string(), "[[\"items\",[[\"key_1\",\"value_1\"]]],[\"locker_poptabs\",\"1\"],[\"player_poptabs\",\"3\"],[\"respect\",\"2\"],[\"vehicles\",null]]");
     }
 }
