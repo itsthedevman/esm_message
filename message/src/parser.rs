@@ -34,10 +34,16 @@ impl Parser {
 
 pub fn validate_content(input: &JSONValue) -> JSONValue {
     match input {
-        JSONValue::Array(a) => match convert_arma_array_to_object(a) {
-            Ok(v) => v,
-            Err(_) => input.to_owned(),
-        },
+        JSONValue::Array(a) => {
+            if a.is_empty() {
+                JSONValue::Array(vec![])
+            } else {
+                match convert_arma_array_to_object(a) {
+                    Ok(v) => v,
+                    Err(_) => input.to_owned(),
+                }
+            }
+        }
         _ => input.to_owned(),
     }
 }
@@ -159,6 +165,13 @@ mod tests {
     }
 
     #[test]
+    fn it_does_not_convert_empty_arrays() {
+        let input = json!([]);
+        let result = validate_content(&input);
+        assert_eq!(result, input);
+    }
+
+    #[test]
     fn it_converts_to_data_struct() {
         let input = json!([
             json!(["type", "test"]),
@@ -175,6 +188,12 @@ mod tests {
                 foo: "bar".to_string()
             })
         );
+
+        let input = json!([json!(["type", "empty"])]).to_arma().to_string();
+
+        let result: Result<Data, String> = Parser::from_arma(&input);
+
+        assert_eq!(result.unwrap(), Data::Empty);
     }
 
     #[test]
