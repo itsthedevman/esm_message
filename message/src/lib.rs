@@ -301,8 +301,6 @@ fn decrypt_message(bytes: Vec<u8>, server_key: &[u8]) -> Result<Message, String>
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
     use super::*;
     use crate::data::Init;
 
