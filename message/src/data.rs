@@ -77,12 +77,12 @@ impl FromArma for Data {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct Test {
     pub foo: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct Init {
     pub extension_version: String,
     pub price_per_object: NumberString,
@@ -94,7 +94,22 @@ pub struct Init {
     pub vg_max_sizes: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+impl Default for Init {
+    fn default() -> Self {
+        Init {
+            extension_version: "".into(),
+            price_per_object: "".into(),
+            server_name: "".into(),
+            server_start_time: Utc::now(),
+            territory_data: "".into(),
+            territory_lifetime: "".into(),
+            vg_enabled: false,
+            vg_max_sizes: "".into(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct PostInit {
     pub extdb_path: String,
     pub gambling_modifier: NumberString,
@@ -121,7 +136,7 @@ pub struct PostInit {
     pub territory_upgrade_tax: NumberString,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct Reward {
     pub items: Option<HashMap<String, NumberString>>,
     pub locker_poptabs: Option<NumberString>,
@@ -130,18 +145,18 @@ pub struct Reward {
     pub vehicles: Option<Vec<HashMap<String, String>>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct Sqf {
     pub execute_on: String,
     pub code: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct SqfResult {
     pub result: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct Event {
     pub event_type: String,
     pub triggered_at: DateTime<Utc>,
@@ -165,18 +180,18 @@ pub struct Event {
 // get_payment_count
 // increment_payment_counter
 // reset_payment_counter
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct Query {
     pub arguments: HashMap<String, String>,
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct QueryResult {
     pub results: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct SendToChannel {
     pub id: String,
     pub content: String,
