@@ -110,13 +110,44 @@ impl Default for Init {
 }
 
 impl Init {
-    pub fn valid(&self) -> bool {
-        !self.extension_version.is_empty()
-            && self.price_per_object.parse::<usize>().is_ok()
-            && !self.server_name.is_empty()
-            && !self.territory_data.is_empty()
-            && self.territory_lifetime.parse::<usize>().is_ok()
-            && !self.vg_max_sizes.is_empty()
+    pub fn validate(&self) -> Result<(), Vec<String>> {
+        let mut errors = vec![];
+
+        if self.extension_version.is_empty() {
+            errors.push("\"extension_version\" was not provided".into());
+        }
+
+        if let Err(e) = self.price_per_object.parse::<usize>() {
+            errors.push(format!(
+                "Could not parse \"{}\" provided to \"price_per_object\" - {}",
+                self.price_per_object, e
+            ));
+        }
+
+        if self.server_name.is_empty() {
+            errors.push("\"server_name\" was not provided".into());
+        }
+
+        if self.territory_data.is_empty() {
+            errors.push("\"territory_data\" was not provided".into());
+        }
+
+        if let Err(e) = self.territory_lifetime.parse::<usize>() {
+            errors.push(format!(
+                "Could not parse \"{}\" provided to \"territory_lifetime\" - {}",
+                self.territory_lifetime, e
+            ));
+        }
+
+        if self.vg_max_sizes.is_empty() {
+            errors.push("\"vg_max_sizes\" was not provided".into());
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 }
 
@@ -254,23 +285,22 @@ mod tests {
 
     #[test]
     fn is_init_valid() {
-        assert!(!Init::default().valid());
-        assert!(
-            Init {
-                extension_version: "version".into(),
-                price_per_object: "5".into(),
-                server_name: "server name".into(),
-                server_start_time: Utc::now(),
-                territory_data: "[]".into(),
-                territory_lifetime: "7".into(),
-                vg_enabled: false,
-                vg_max_sizes: "[]".into(),
-            }
-            .valid()
-        );
+        assert!(Init::default().validate().is_err());
+        assert!(Init {
+            extension_version: "version".into(),
+            price_per_object: "5".into(),
+            server_name: "server name".into(),
+            server_start_time: Utc::now(),
+            territory_data: "[]".into(),
+            territory_lifetime: "7".into(),
+            vg_enabled: false,
+            vg_max_sizes: "[]".into(),
+        }
+        .validate()
+        .is_ok());
 
-        assert!(
-            !Init {
+        assert_eq!(
+            Init {
                 extension_version: "".into(),
                 price_per_object: "-1".into(),
                 server_name: "server name".into(),
@@ -280,7 +310,13 @@ mod tests {
                 vg_enabled: false,
                 vg_max_sizes: "[]".into(),
             }
-            .valid()
+            .validate()
+            .unwrap_err(),
+            vec![
+                "\"extension_version\" was not provided".to_string(),
+                "Could not parse \"-1\" provided to \"price_per_object\" - invalid digit found in string".into(),
+                "\"territory_data\" was not provided".into()
+            ]
         );
     }
 }
