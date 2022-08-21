@@ -109,6 +109,17 @@ impl Default for Init {
     }
 }
 
+impl Init {
+    pub fn valid(&self) -> bool {
+        !self.extension_version.is_empty()
+            && self.price_per_object.parse::<usize>().is_ok()
+            && !self.server_name.is_empty()
+            && !self.territory_data.is_empty()
+            && self.territory_lifetime.parse::<usize>().is_ok()
+            && !self.vg_max_sizes.is_empty()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct PostInit {
     pub extdb_path: String,
@@ -239,5 +250,37 @@ mod tests {
         };
 
         assert_eq!(data.to_arma().to_string(), "[[\"items\",[[\"key_1\",\"value_1\"]]],[\"locker_poptabs\",\"1\"],[\"player_poptabs\",\"3\"],[\"respect\",\"2\"],[\"vehicles\",null]]");
+    }
+
+    #[test]
+    fn is_init_valid() {
+        assert!(!Init::default().valid());
+        assert!(
+            Init {
+                extension_version: "version".into(),
+                price_per_object: "5".into(),
+                server_name: "server name".into(),
+                server_start_time: Utc::now(),
+                territory_data: "[]".into(),
+                territory_lifetime: "7".into(),
+                vg_enabled: false,
+                vg_max_sizes: "[]".into(),
+            }
+            .valid()
+        );
+
+        assert!(
+            !Init {
+                extension_version: "".into(),
+                price_per_object: "-1".into(),
+                server_name: "server name".into(),
+                server_start_time: Utc::now(),
+                territory_data: "".into(),
+                territory_lifetime: "7".into(),
+                vg_enabled: false,
+                vg_max_sizes: "[]".into(),
+            }
+            .valid()
+        );
     }
 }
