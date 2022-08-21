@@ -334,10 +334,10 @@ mod tests {
         );
         let server_key = server_key.as_bytes();
 
-        let encrypted_bytes = encrypt_message(&message, &server_key);
+        let encrypted_bytes = encrypt_message(&message, server_key);
         assert!(encrypted_bytes.is_ok());
 
-        let decrypted_message = decrypt_message(encrypted_bytes.unwrap(), &server_key);
+        let decrypted_message = decrypt_message(encrypted_bytes.unwrap(), server_key);
         assert!(decrypted_message.is_ok());
 
         let decrypted_message = decrypted_message.unwrap();
