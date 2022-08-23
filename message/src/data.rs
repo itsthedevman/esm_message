@@ -25,7 +25,7 @@ macro_rules! retrieve_data {
     }};
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
     Empty,
@@ -74,6 +74,23 @@ impl IntoArma for Data {
 impl FromArma for Data {
     fn from_arma(string: String) -> Result<Self, String> {
         crate::parser::Parser::from_arma(&string)
+    }
+}
+
+impl std::fmt::Display for Data {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Data::Empty => write!(f, "Empty"),
+            Data::Test(d) => write!(f, "{:?}", d),
+            Data::Init(d) => write!(f, "{:?}", d),
+            Data::PostInit(d) => write!(f, "{:?}", d),
+            Data::Query(d) => write!(f, "{:?}", d),
+            Data::QueryResult(d) => write!(f, "{:?}", d),
+            Data::SendToChannel(d) => write!(f, "{:?}", d),
+            Data::Reward(d) => write!(f, "{:?}", d),
+            Data::Sqf(d) => write!(f, "{:?}", d),
+            Data::SqfResult(d) => write!(f, "{:?}", d),
+        }
     }
 }
 

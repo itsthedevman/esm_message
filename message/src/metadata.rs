@@ -2,7 +2,7 @@ use arma_rs::{FromArma, IntoArma, Value as ArmaValue};
 use message_proc::ImplIntoArma;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Metadata {
     Empty,
@@ -32,18 +32,28 @@ impl FromArma for Metadata {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+impl std::fmt::Display for Metadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Metadata::Empty => write!(f, "Empty"),
+            Metadata::Test(d) => write!(f, "{:?}", d),
+            Metadata::Command(d) => write!(f, "{:?}", d),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct Test {
     pub foo: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct Command {
     pub player: Player,
     pub target: Option<Player>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ImplIntoArma)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
 pub struct Player {
     pub discord_id: Option<String>,
     pub discord_mention: Option<String>,
