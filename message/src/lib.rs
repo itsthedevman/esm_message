@@ -169,7 +169,7 @@ impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{message_type:?} message to/from {server_id}\nid: {id}\ndata: {data}\nmetadata: {meta}\nerrors: {errors:?}",
+            "{message_type:?} message - id: {id} - server_id: {server_id}\ndata: {data}\nmetadata: {meta}\nerrors: {errors:?}",
             message_type = self.message_type,
             server_id = if self.server_id.is_none() { "".to_string() } else { String::from_utf8_lossy(self.server_id.as_ref().unwrap()).to_string() },
             id = self.id,
