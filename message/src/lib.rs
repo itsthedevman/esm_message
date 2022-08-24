@@ -36,7 +36,7 @@ pub type NumberString = String;
         errors: []
     }
 */
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Message {
     pub id: Uuid,
 
@@ -180,7 +180,7 @@ impl std::fmt::Display for Message {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum Type {
     // System message types
