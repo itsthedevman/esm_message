@@ -6,13 +6,13 @@ pub struct Parser {}
 
 impl Parser {
     pub fn from_arma<T: DeserializeOwned>(input: &str) -> Result<T, String> {
-        let input = replace_arma_escape_characters(input);
+        let input = replace_arma_characters(input);
 
         let input: JSONValue = match serde_json::from_str(&input) {
             Ok(v) => v,
             Err(e) => {
                 return Err(format!(
-                    "[esm_message::parser::from_arma] Failed to convert input into JSONValue. Reason: {e}. Input: {input}"
+                    "[esm_message::parser::from_arma] Failed to convert input into JSON. Reason: {e}. Input: {input}"
                 ))
             }
         };
@@ -82,8 +82,9 @@ fn convert_arma_array_to_object(input: &Vec<JSONValue>) -> Result<JSONValue, Str
     Ok(JSONValue::Object(object))
 }
 
-fn replace_arma_escape_characters(input: &str) -> String {
-    let str_terminators = ["[", "]", ","];
+// Handles Arma's double quote escape characters and its various nil types
+fn replace_arma_characters(input: &str) -> String {
+    let str_terminators = ["[", "]", ",", ""];
     let mut new_string_chars: Vec<String> = Vec::new();
     let mut in_string = false;
     let mut quote_series_counter = 1_usize;
@@ -131,6 +132,38 @@ fn replace_arma_escape_characters(input: &str) -> String {
         }
 
         new_string_chars.push(char_to_add);
+
+        // Replaces `any`, `null`, and `<null>` that are not inside a string
+        // Replacement occurs when the last char is detected
+        if !in_string {
+            let allowed_prefix_chars = ["", " ", ",", "["];
+            let allowed_suffix_chars = ["]", "", " "];
+            let index = new_string_chars.len().saturating_sub(1);
+
+            let detect_and_replace_word = |word: &str, chars: &mut Vec<String>| {
+                let word_size = word.len() - 1;
+                let starting_index = index.saturating_sub(word_size);
+                let slice = &chars[starting_index..=index].join("");
+                let previous_char = &chars[starting_index.saturating_sub(1)];
+
+                if slice.eq(&word)
+                    && allowed_prefix_chars.contains(&previous_char.as_str())
+                    && allowed_suffix_chars.contains(next_char)
+                {
+                    for _ in 0..=word_size {
+                        chars.pop();
+                    }
+
+                    for c in "null".chars().map(String::from) {
+                        chars.push(c);
+                    }
+                }
+            };
+
+            detect_and_replace_word("any", &mut new_string_chars);
+            detect_and_replace_word("nil", &mut new_string_chars);
+            detect_and_replace_word("<null>", &mut new_string_chars);
+        }
     }
 
     new_string_chars.join("")
@@ -198,14 +231,30 @@ mod tests {
 
     #[test]
     fn it_handles_escaped_strings() {
-        let input = "[[\"type\",\"sqf_result\"],[\"content\",[[\"result\",\"[[\"\"key_1\"\",\"\"value_1\"\"],[\"\"key_2\"\",true],[\"\"key_3\"\",[[\"\"key_4\"\",false],[\"\"key_5\"\",[[\"\"key_6\"\",6],[\"\"key_7\"\",<null>]]]]]]\"]]]]";
+        let input = "[[\"type\",\"sqf_result\"],[\"content\",[[\"result\",\"[[\"\"key_1\"\",\"\"value_1\"\"],[\"\"key_2\"\",true],[\"\"key_3\"\",[[\"\"key_4\"\",false],[\"\"key_5\"\",[[\"\"key_6\"\",any],[\"\"key_7\"\",<null>]]]]]]\"]]]]";
 
         let result: Result<Data, String> = Parser::from_arma(input);
 
         assert_eq!(
             result.unwrap(),
             Data::SqfResult(data::SqfResult {
-                result: Some("[[\"key_1\",\"value_1\"],[\"key_2\",true],[\"key_3\",[[\"key_4\",false],[\"key_5\",[[\"key_6\",6],[\"key_7\",<null>]]]]]]".to_string())
+                result: Some("[[\"key_1\",\"value_1\"],[\"key_2\",true],[\"key_3\",[[\"key_4\",false],[\"key_5\",[[\"key_6\",any],[\"key_7\",<null>]]]]]]".to_string())
+            })
+        );
+    }
+
+    #[test]
+    fn it_handles_null_characters() {
+        let input = r#"[["type","reward"],["content",[["items",<null>],["locker_poptabs",nil],["player_poptabs",any],["respect","1"],["vehicles",[]]]]]"#;
+        let result: Result<Data, String> = Parser::from_arma(input);
+        assert_eq!(
+            result.unwrap(),
+            Data::Reward(data::Reward {
+                items: None,
+                locker_poptabs: None,
+                player_poptabs: None,
+                respect: Some("1".to_string()),
+                vehicles: Some(vec![])
             })
         );
     }
