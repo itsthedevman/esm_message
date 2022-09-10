@@ -261,7 +261,7 @@ pub struct ArmaPostInit {
     pub logging_upgrade_territory: bool,
 
     #[serde(rename = "ESM_LoggingChannelID")]
-    pub logging_channel_id: bool,
+    pub logging_channel_id: String,
 
     #[serde(rename = "ESM_ServerID")]
     pub server_id: String,
