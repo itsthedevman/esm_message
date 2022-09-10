@@ -85,12 +85,27 @@ impl Message {
         }
     }
 
-    pub fn set_resource(&mut self, resource_id: ResourceId) -> &Message {
+    pub fn set_resource(mut self, resource_id: ResourceId) -> Message {
         self.resource_id = Some(resource_id.adapter_id() as i64);
         self
     }
 
-    pub fn add_error<S>(&mut self, error_type: ErrorType, error_message: S) -> &Message
+    pub fn set_id(mut self, uuid: Uuid) -> Message {
+        self.id = uuid;
+        self
+    }
+
+    pub fn set_data(mut self, data: Data) -> Message {
+        self.data = data;
+        self
+    }
+
+    pub fn set_metadata(mut self, metadata: Metadata) -> Message {
+        self.metadata = metadata;
+        self
+    }
+
+    pub fn add_error<S>(mut self, error_type: ErrorType, error_message: S) -> Message
     where
         S: Into<String>,
     {
@@ -454,18 +469,16 @@ mod tests {
         use data::Data;
 
         let id = Uuid::new_v4();
-        let mut expectation = Message::new(Type::Event);
-        expectation.id = id;
-        expectation.data = Data::Test(data::Test {
-            foo: "test\"ing".into(),
-        });
-
-        expectation.metadata = Metadata::Test(metadata::Test {
-            foo: "\"testing\" \\(* \\\\\" *)/ - \"nested\"".into(),
-        });
-
-        expectation.add_error(ErrorType::Message, "This is a message");
-        expectation.add_error(ErrorType::Code, "CODING");
+        let expectation = Message::new(Type::Event)
+            .set_id(id)
+            .set_data(Data::Test(data::Test {
+                foo: "test\"ing".into(),
+            }))
+            .set_metadata(Metadata::Test(metadata::Test {
+                foo: "\"testing\" \\(* \\\\\" *)/ - \"nested\"".into(),
+            }))
+            .add_error(ErrorType::Message, "This is a message")
+            .add_error(ErrorType::Code, "CODING");
 
         let result = Message::from_arma(
             id.to_string(),
