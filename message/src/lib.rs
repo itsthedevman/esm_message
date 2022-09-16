@@ -95,6 +95,11 @@ impl Message {
         self
     }
 
+    pub fn set_type(mut self, message_type: Type) -> Message {
+        self.message_type = message_type;
+        self
+    }
+
     pub fn set_data(mut self, data: Data) -> Message {
         self.data = data;
         self
@@ -471,6 +476,7 @@ mod tests {
         let id = Uuid::new_v4();
         let expectation = Message::new(Type::Event)
             .set_id(id)
+            .set_type(Type::Test)
             .set_data(Data::Test(data::Test {
                 foo: "test\"ing".into(),
             }))
@@ -482,7 +488,7 @@ mod tests {
 
         let result = Message::from_arma(
             id.to_string(),
-            "event".into(),
+            "test".into(),
             r#"[["type","test"],["content",[["foo","test""ing"]]]]"#
             .to_string(),
             r#"[["type","test"],["content",[["foo","""testing"" \(* """""" *)/ - ""nested"""]]]]"#
