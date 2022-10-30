@@ -107,7 +107,7 @@ impl Message {
         self
     }
 
-    pub fn from_bytes(data: Vec<u8>, key: &[u8]) -> Result<Message, String> {
+    pub fn from_bytes(data: &[u8], key: &[u8]) -> Result<Message, String> {
         decrypt_message(data, key)
     }
 
@@ -266,7 +266,7 @@ fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, Stri
     Ok(packet)
 }
 
-fn decrypt_message(bytes: Vec<u8>, server_key: &[u8]) -> Result<Message, String> {
+fn decrypt_message(bytes: &[u8], server_key: &[u8]) -> Result<Message, String> {
     // The first byte is the length of the server_id so we know how many bytes to extract
     let id_length = bytes[0] as usize;
 
@@ -354,7 +354,7 @@ mod tests {
         let encrypted_bytes = encrypt_message(&message, server_key);
         assert!(encrypted_bytes.is_ok());
 
-        let decrypted_message = decrypt_message(encrypted_bytes.unwrap(), server_key);
+        let decrypted_message = decrypt_message(&encrypted_bytes.unwrap(), server_key);
         assert!(decrypted_message.is_ok());
 
         let decrypted_message = decrypted_message.unwrap();
