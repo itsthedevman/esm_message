@@ -6,7 +6,6 @@ pub mod parser;
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use arma_rs::FromArma;
-use message_io::network::ResourceId;
 use rand::random;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -23,7 +22,6 @@ pub type NumberString = String;
     {
         id: "",
         type: "",
-        resource_id: null,
         server_id: [],
         data: {
             type: "",
@@ -45,10 +43,6 @@ pub struct Message {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_id: Option<Vec<u8>>,
-
-    // Only used between the server and the bot. Ignored between server/client
-    #[serde(skip)]
-    pub resource_id: Option<i64>,
 
     #[serde(default, skip_serializing_if = "data_is_empty")]
     pub data: Data,
@@ -77,17 +71,11 @@ impl Message {
         Message {
             id: Uuid::new_v4(),
             message_type,
-            resource_id: None,
             server_id: None,
             data: Data::Empty,
             metadata: Metadata::Empty,
             errors: Vec::new(),
         }
-    }
-
-    pub fn set_resource(mut self, resource_id: ResourceId) -> Message {
-        self.resource_id = Some(resource_id.adapter_id() as i64);
-        self
     }
 
     pub fn set_id(mut self, uuid: Uuid) -> Message {
