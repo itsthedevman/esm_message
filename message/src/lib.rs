@@ -88,6 +88,11 @@ impl Message {
         self
     }
 
+    pub fn set_server_id(mut self, server_id: &[u8]) -> Message {
+        self.server_id = Some(server_id.to_vec());
+        self
+    }
+
     pub fn set_data(mut self, data: Data) -> Message {
         self.data = data;
         self
