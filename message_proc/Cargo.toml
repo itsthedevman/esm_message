@@ -4,7 +4,7 @@ description = "proc macros for esm_message"
 version = "1.0.0"
 edition = "2021"
 authors = ["Bryan <WolfkillArcadia@gmail.com>"]
-repository = "https://github.com/WolfkillArcadia/esm_message"
+repository = "https://github.com/itsthedevman/esm_message"
 license = ""
 
 [lib]

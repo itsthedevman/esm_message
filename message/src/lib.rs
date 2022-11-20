@@ -112,6 +112,14 @@ impl Message {
         self
     }
 
+    pub fn server_id(&self) -> String {
+        let Some(server_id) = self.server_id.as_ref() else {
+            return String::new();
+        };
+
+        String::from_utf8_lossy(server_id).to_string()
+    }
+
     pub fn from_bytes(data: &[u8], key: &[u8]) -> Result<Message, String> {
         decrypt_message(data, key)
     }
@@ -182,9 +190,9 @@ impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{message_type:?} message - id: {id} - server_id: {server_id}\ndata: {data}\nmetadata: {meta}\nerrors: {errors:?}",
+            "{message_type:?} message - id: {id} - server_id: {server_id} - data: {data} - metadata: {meta} - errors: {errors:?}",
             message_type = self.message_type,
-            server_id = if self.server_id.is_none() { "".to_string() } else { String::from_utf8_lossy(self.server_id.as_ref().unwrap()).to_string() },
+            server_id = self.server_id(),
             id = self.id,
             data = self.data,
             meta = self.metadata,
