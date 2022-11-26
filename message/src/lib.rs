@@ -233,6 +233,10 @@ pub enum Type {
 
 #[allow(clippy::ptr_arg)]
 fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, String> {
+    if server_key.len() < 32 {
+        return Err("Server key must contain at least 32 bytes".into());
+    }
+
     // Setup everything for encryption
     let encryption_key = Key::from_slice(&server_key[0..32]); // server_key has to be exactly 32 bytes
     let encryption_cipher = Aes256Gcm::new(encryption_key);
