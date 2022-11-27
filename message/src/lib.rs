@@ -282,6 +282,10 @@ fn encrypt_message(message: &Message, server_key: &[u8]) -> Result<Vec<u8>, Stri
 }
 
 fn decrypt_message(bytes: &[u8], server_key: &[u8]) -> Result<Message, String> {
+    if server_key.len() < 32 {
+        return Err("Server key must contain at least 32 bytes".into());
+    }
+
     // The first byte is the length of the server_id so we know how many bytes to extract
     let id_length = bytes[0] as usize;
 
