@@ -103,6 +103,20 @@ impl Message {
         self
     }
 
+    pub fn add_error_code<S>(mut self, code: S) -> Message
+    where
+        S: Into<String>,
+    {
+        self.add_error(ErrorType::Code, code)
+    }
+
+    pub fn add_error_message<S>(mut self, message: S) -> Message
+    where
+        S: Into<String>,
+    {
+        self.add_error(ErrorType::Message, message)
+    }
+
     pub fn add_error<S>(mut self, error_type: ErrorType, error_message: S) -> Message
     where
         S: Into<String>,
