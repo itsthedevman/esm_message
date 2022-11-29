@@ -34,7 +34,6 @@ pub enum Data {
     // Init
     Init(Init),
     PostInit(PostInit),
-    ArmaPostInit(ArmaPostInit),
 
     // Query
     Query(Query),
@@ -68,7 +67,6 @@ impl IntoArma for Data {
             Data::SendToChannel(d) => d.to_arma(),
             Data::Sqf(s) => s.to_arma(),
             Data::SqfResult(s) => s.to_arma(),
-            Data::ArmaPostInit(i) => i.to_arma(),
         }
     }
 }
@@ -92,7 +90,6 @@ impl std::fmt::Display for Data {
             Data::Reward(d) => write!(f, "{:?}", d),
             Data::Sqf(d) => write!(f, "{:?}", d),
             Data::SqfResult(d) => write!(f, "{:?}", d),
-            Data::ArmaPostInit(i) => write!(f, "{:?}", i),
         }
     }
 }
@@ -171,111 +168,84 @@ impl Init {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ImplIntoArma)]
-pub struct PostInit {
-    pub extdb_path: String,
-    pub gambling_modifier: NumberString,
-    pub gambling_payout: NumberString,
-    pub gambling_randomizer_max: NumberString,
-    pub gambling_randomizer_mid: NumberString,
-    pub gambling_randomizer_min: NumberString,
-    pub gambling_win_chance: NumberString,
-    pub logging_add_player_to_territory: bool,
-    pub logging_channel_id: String,
-    pub logging_demote_player: bool,
-    pub logging_exec: bool,
-    pub logging_gamble: bool,
-    pub logging_modify_player: bool,
-    pub logging_pay_territory: bool,
-    pub logging_promote_player: bool,
-    pub logging_remove_player_from_territory: bool,
-    pub logging_reward: bool,
-    pub logging_transfer: bool,
-    pub logging_upgrade_territory: bool,
-    pub max_payment_count: NumberString,
-    pub territory_admins: Vec<String>,
-    pub territory_payment_tax: NumberString,
-    pub territory_upgrade_tax: NumberString,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, ImplIntoArma, PartialEq, Eq)]
-pub struct ArmaPostInit {
-    #[serde(rename = "ESM_BuildNumber")]
+pub struct PostInit {
+    #[serde(rename(serialize = "ESM_BuildNumber"), default)]
     pub build_number: String,
 
-    #[serde(rename = "ESM_CommunityID")]
+    #[serde(rename(serialize = "ESM_CommunityID"))]
     pub community_id: String,
 
-    #[serde(rename = "ESM_ExtDBVersion")]
+    #[serde(rename(serialize = "ESM_ExtDBVersion"))]
     pub extdb_version: u8,
 
-    #[serde(rename = "ESM_Gambling_Modifier")]
+    #[serde(rename(serialize = "ESM_Gambling_Modifier"))]
     pub gambling_modifier: NumberString,
 
-    #[serde(rename = "ESM_Gambling_PayoutBase")]
+    #[serde(rename(serialize = "ESM_Gambling_PayoutBase"))]
     pub gambling_payout_base: NumberString,
 
-    #[serde(rename = "ESM_Gambling_PayoutRandomizerMax")]
+    #[serde(rename(serialize = "ESM_Gambling_PayoutRandomizerMax"))]
     pub gambling_payout_randomizer_max: NumberString,
 
-    #[serde(rename = "ESM_Gambling_PayoutRandomizerMid")]
+    #[serde(rename(serialize = "ESM_Gambling_PayoutRandomizerMid"))]
     pub gambling_payout_randomizer_mid: NumberString,
 
-    #[serde(rename = "ESM_Gambling_PayoutRandomizerMin")]
+    #[serde(rename(serialize = "ESM_Gambling_PayoutRandomizerMin"))]
     pub gambling_payout_randomizer_min: NumberString,
 
-    #[serde(rename = "ESM_Gambling_WinPercentage")]
+    #[serde(rename(serialize = "ESM_Gambling_WinPercentage"))]
     pub gambling_win_percentage: NumberString,
 
-    #[serde(rename = "ESM_Logging_AddPlayerToTerritory")]
+    #[serde(rename(serialize = "ESM_Logging_AddPlayerToTerritory"))]
     pub logging_add_player_to_territory: bool,
 
-    #[serde(rename = "ESM_Logging_DemotePlayer")]
+    #[serde(rename(serialize = "ESM_Logging_DemotePlayer"))]
     pub logging_demote_player: bool,
 
-    #[serde(rename = "ESM_Logging_Exec")]
+    #[serde(rename(serialize = "ESM_Logging_Exec"))]
     pub logging_exec: bool,
 
-    #[serde(rename = "ESM_Logging_Gamble")]
+    #[serde(rename(serialize = "ESM_Logging_Gamble"))]
     pub logging_gamble: bool,
 
-    #[serde(rename = "ESM_Logging_ModifyPlayer")]
+    #[serde(rename(serialize = "ESM_Logging_ModifyPlayer"))]
     pub logging_modify_player: bool,
 
-    #[serde(rename = "ESM_Logging_PayTerritory")]
+    #[serde(rename(serialize = "ESM_Logging_PayTerritory"))]
     pub logging_pay_territory: bool,
 
-    #[serde(rename = "ESM_Logging_PromotePlayer")]
+    #[serde(rename(serialize = "ESM_Logging_PromotePlayer"))]
     pub logging_promote_player: bool,
 
-    #[serde(rename = "ESM_Logging_RemovePlayerFromTerritory")]
+    #[serde(rename(serialize = "ESM_Logging_RemovePlayerFromTerritory"))]
     pub logging_remove_player_from_territory: bool,
 
-    #[serde(rename = "ESM_Logging_RewardPlayer")]
+    #[serde(rename(serialize = "ESM_Logging_RewardPlayer"))]
     pub logging_reward_player: bool,
 
-    #[serde(rename = "ESM_Logging_TransferPoptabs")]
+    #[serde(rename(serialize = "ESM_Logging_TransferPoptabs"))]
     pub logging_transfer_poptabs: bool,
 
-    #[serde(rename = "ESM_Logging_UpgradeTerritory")]
+    #[serde(rename(serialize = "ESM_Logging_UpgradeTerritory"))]
     pub logging_upgrade_territory: bool,
 
-    #[serde(rename = "ESM_LoggingChannelID")]
+    #[serde(rename(serialize = "ESM_LoggingChannelID"))]
     pub logging_channel_id: String,
 
-    #[serde(rename = "ESM_ServerID")]
+    #[serde(rename(serialize = "ESM_ServerID"))]
     pub server_id: String,
 
-    #[serde(rename = "ESM_Taxes_TerritoryPayment")]
+    #[serde(rename(serialize = "ESM_Taxes_TerritoryPayment"))]
     pub taxes_territory_payment: NumberString,
 
-    #[serde(rename = "ESM_Taxes_TerritoryUpgrade")]
+    #[serde(rename(serialize = "ESM_Taxes_TerritoryUpgrade"))]
     pub taxes_territory_upgrade: NumberString,
 
-    #[serde(rename = "ESM_TerritoryAdminUIDs")]
+    #[serde(rename(serialize = "ESM_TerritoryAdminUIDs"))]
     pub territory_admin_uids: Vec<String>,
 
-    #[serde(rename = "ESM_Version")]
+    #[serde(rename(serialize = "ESM_Version"), default)]
     pub version: String,
 }
 
@@ -347,7 +317,7 @@ mod tests {
 
     #[test]
     fn test_retrieve_data() {
-        let mut message = Message::new(Type::Test);
+        let mut message = Message::new().set_type(Type::Test);
         message.data = Data::Test(data::Test {
             foo: "testing".into(),
         });
