@@ -67,15 +67,8 @@ fn errors_is_empty(errors: &[Error]) -> bool {
 }
 
 impl Message {
-    pub fn new(message_type: Type) -> Self {
-        Message {
-            id: Uuid::new_v4(),
-            message_type,
-            server_id: None,
-            data: Data::Empty,
-            metadata: Metadata::Empty,
-            errors: Vec::new(),
-        }
+    pub fn new() -> Self {
+        Message::default()
     }
 
     pub fn set_id(mut self, uuid: Uuid) -> Message {
@@ -103,14 +96,14 @@ impl Message {
         self
     }
 
-    pub fn add_error_code<S>(mut self, code: S) -> Message
+    pub fn add_error_code<S>(self, code: S) -> Message
     where
         S: Into<String>,
     {
         self.add_error(ErrorType::Code, code)
     }
 
-    pub fn add_error_message<S>(mut self, message: S) -> Message
+    pub fn add_error_message<S>(self, message: S) -> Message
     where
         S: Into<String>,
     {
@@ -167,7 +160,7 @@ impl Message {
     ) -> Result<Message, String> {
         // The message type has to be double quoted in order to parse
         let mut message = match serde_json::from_str(&format!("\"{}\"", message_type)) {
-            Ok(t) => Self::new(t),
+            Ok(t) => Self::new().set_type(t),
             Err(e) => {
                 return Err(format!(
                     "\"{}\" is not a valid type. Error: {}",
@@ -215,6 +208,19 @@ impl std::fmt::Display for Message {
     }
 }
 
+impl Default for Message {
+    fn default() -> Self {
+        Message {
+            id: Uuid::new_v4(),
+            message_type: Type::Event,
+            server_id: None,
+            data: Data::Empty,
+            metadata: Metadata::Empty,
+            errors: Vec::new(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum Type {
@@ -226,9 +232,6 @@ pub enum Type {
 
     // Automatic testing
     Test,
-
-    // Error event
-    Error,
 
     // Initialization event
     Init,
@@ -356,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_encrypt_and_decrypt_message() {
-        let mut message = Message::new(Type::Init);
+        let mut message = Message::new().set_type(Type::Init);
 
         let server_init = Init {
             server_name: "server_name".into(),
@@ -409,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_it_serializes_with_server_id() {
-        let mut message = Message::new(Type::Init);
+        let mut message = Message::new().set_type(Type::Init);
         message.server_id = Some("some_server_id".as_bytes().to_vec());
 
         let serialized_message = serde_json::to_string(&message);
@@ -421,7 +424,7 @@ mod tests {
 
     #[test]
     fn test_it_serializes_without_server_id() {
-        let message = Message::new(Type::Init);
+        let message = Message::new().set_type(Type::Init);
 
         let serialized_message = serde_json::to_string(&message);
         assert!(serialized_message.is_ok());
@@ -471,7 +474,7 @@ mod tests {
 
     #[test]
     fn test_serializing_empty_message() {
-        let message = Message::new(Type::Init);
+        let message = Message::new().set_type(Type::Init);
         let json = serde_json::to_string(&message).unwrap();
 
         let expected = format!("{{\"id\":\"{}\",\"type\":\"init\"}}", message.id);
@@ -495,7 +498,7 @@ mod tests {
         use data::Data;
 
         let id = Uuid::new_v4();
-        let expectation = Message::new(Type::Event)
+        let expectation = Message::new()
             .set_id(id)
             .set_type(Type::Test)
             .set_data(Data::Test(data::Test {
