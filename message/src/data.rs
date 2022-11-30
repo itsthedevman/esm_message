@@ -175,86 +175,151 @@ impl Init {
 #[derive(Serialize, Deserialize, Debug, Clone, ImplIntoArma, PartialEq, Eq)]
 pub struct PostInit {
     // Set by the client
-    #[serde(rename(serialize = "ESM_BuildNumber"), default)]
+    #[serde(
+        rename(serialize = "ESM_BuildNumber"),
+        alias = "ESM_BuildNumber",
+        default
+    )]
     pub build_number: String,
 
-    #[serde(rename(serialize = "ESM_CommunityID"))]
+    #[serde(rename(serialize = "ESM_CommunityID"), alias = "ESM_CommunityID")]
     pub community_id: String,
 
     #[serde(skip_serializing)]
     pub extdb_path: String,
 
-    #[serde(rename(serialize = "ESM_ExtDBVersion"), default)]
+    #[serde(
+        rename(serialize = "ESM_ExtDBVersion"),
+        alias = "ESM_ExtDBVersion",
+        default
+    )]
     pub extdb_version: u8,
 
-    #[serde(rename(serialize = "ESM_Gambling_Modifier"))]
+    #[serde(
+        rename(serialize = "ESM_Gambling_Modifier"),
+        alias = "ESM_Gambling_Modifier"
+    )]
     pub gambling_modifier: NumberString,
 
-    #[serde(rename(serialize = "ESM_Gambling_PayoutBase"))]
+    #[serde(
+        rename(serialize = "ESM_Gambling_PayoutBase"),
+        alias = "ESM_Gambling_PayoutBase"
+    )]
     pub gambling_payout_base: NumberString,
 
-    #[serde(rename(serialize = "ESM_Gambling_PayoutRandomizerMax"))]
+    #[serde(
+        rename(serialize = "ESM_Gambling_PayoutRandomizerMax"),
+        alias = "ESM_Gambling_PayoutRandomizerMax"
+    )]
     pub gambling_payout_randomizer_max: NumberString,
 
-    #[serde(rename(serialize = "ESM_Gambling_PayoutRandomizerMid"))]
+    #[serde(
+        rename(serialize = "ESM_Gambling_PayoutRandomizerMid"),
+        alias = "ESM_Gambling_PayoutRandomizerMid"
+    )]
     pub gambling_payout_randomizer_mid: NumberString,
 
-    #[serde(rename(serialize = "ESM_Gambling_PayoutRandomizerMin"))]
+    #[serde(
+        rename(serialize = "ESM_Gambling_PayoutRandomizerMin"),
+        alias = "ESM_Gambling_PayoutRandomizerMin"
+    )]
     pub gambling_payout_randomizer_min: NumberString,
 
-    #[serde(rename(serialize = "ESM_Gambling_WinPercentage"))]
+    #[serde(
+        rename(serialize = "ESM_Gambling_WinPercentage"),
+        alias = "ESM_Gambling_WinPercentage"
+    )]
     pub gambling_win_percentage: NumberString,
 
-    #[serde(rename(serialize = "ESM_Logging_AddPlayerToTerritory"))]
+    #[serde(
+        rename(serialize = "ESM_Logging_AddPlayerToTerritory"),
+        alias = "ESM_Logging_AddPlayerToTerritory"
+    )]
     pub logging_add_player_to_territory: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_DemotePlayer"))]
+    #[serde(
+        rename(serialize = "ESM_Logging_DemotePlayer"),
+        alias = "ESM_Logging_DemotePlayer"
+    )]
     pub logging_demote_player: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_Exec"))]
+    #[serde(rename(serialize = "ESM_Logging_Exec"), alias = "ESM_Logging_Exec")]
     pub logging_exec: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_Gamble"))]
+    #[serde(rename(serialize = "ESM_Logging_Gamble"), alias = "ESM_Logging_Gamble")]
     pub logging_gamble: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_ModifyPlayer"))]
+    #[serde(
+        rename(serialize = "ESM_Logging_ModifyPlayer"),
+        alias = "ESM_Logging_ModifyPlayer"
+    )]
     pub logging_modify_player: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_PayTerritory"))]
+    #[serde(
+        rename(serialize = "ESM_Logging_PayTerritory"),
+        alias = "ESM_Logging_PayTerritory"
+    )]
     pub logging_pay_territory: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_PromotePlayer"))]
+    #[serde(
+        rename(serialize = "ESM_Logging_PromotePlayer"),
+        alias = "ESM_Logging_PromotePlayer"
+    )]
     pub logging_promote_player: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_RemovePlayerFromTerritory"))]
+    #[serde(
+        rename(serialize = "ESM_Logging_RemovePlayerFromTerritory"),
+        alias = "ESM_Logging_RemovePlayerFromTerritory"
+    )]
     pub logging_remove_player_from_territory: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_RewardPlayer"))]
+    #[serde(
+        rename(serialize = "ESM_Logging_RewardPlayer"),
+        alias = "ESM_Logging_RewardPlayer"
+    )]
     pub logging_reward_player: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_TransferPoptabs"))]
+    #[serde(
+        rename(serialize = "ESM_Logging_TransferPoptabs"),
+        alias = "ESM_Logging_TransferPoptabs"
+    )]
     pub logging_transfer_poptabs: bool,
 
-    #[serde(rename(serialize = "ESM_Logging_UpgradeTerritory"))]
+    #[serde(
+        rename(serialize = "ESM_Logging_UpgradeTerritory"),
+        alias = "ESM_Logging_UpgradeTerritory"
+    )]
     pub logging_upgrade_territory: bool,
 
-    #[serde(rename(serialize = "ESM_LoggingChannelID"))]
+    #[serde(
+        rename(serialize = "ESM_LoggingChannelID"),
+        alias = "ESM_LoggingChannelID"
+    )]
     pub logging_channel_id: String,
 
-    #[serde(rename(serialize = "ESM_ServerID"))]
+    #[serde(rename(serialize = "ESM_ServerID"), alias = "ESM_ServerID")]
     pub server_id: String,
 
-    #[serde(rename(serialize = "ESM_Taxes_TerritoryPayment"))]
+    #[serde(
+        rename(serialize = "ESM_Taxes_TerritoryPayment"),
+        alias = "ESM_Taxes_TerritoryPayment"
+    )]
     pub taxes_territory_payment: NumberString,
 
-    #[serde(rename(serialize = "ESM_Taxes_TerritoryUpgrade"))]
+    #[serde(
+        rename(serialize = "ESM_Taxes_TerritoryUpgrade"),
+        alias = "ESM_Taxes_TerritoryUpgrade"
+    )]
     pub taxes_territory_upgrade: NumberString,
 
-    #[serde(rename(serialize = "ESM_TerritoryAdminUIDs"))]
+    #[serde(
+        rename(serialize = "ESM_TerritoryAdminUIDs"),
+        alias = "ESM_TerritoryAdminUIDs"
+    )]
     pub territory_admin_uids: Vec<String>,
 
     // Set by the client
-    #[serde(rename(serialize = "ESM_Version"), default)]
+    #[serde(rename(serialize = "ESM_Version"), alias = "ESM_Version", default)]
     pub version: String,
 }
 
