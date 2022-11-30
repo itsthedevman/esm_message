@@ -185,7 +185,7 @@ pub struct PostInit {
     #[serde(rename(serialize = "ESM_CommunityID"), alias = "ESM_CommunityID")]
     pub community_id: String,
 
-    #[serde(skip_serializing)]
+    // This is only used internally between esm_bot and esm_arma
     pub extdb_path: String,
 
     #[serde(
