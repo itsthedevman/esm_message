@@ -184,7 +184,7 @@ pub struct PostInit {
     #[serde(skip_serializing)]
     pub extdb_path: String,
 
-    #[serde(rename(serialize = "ESM_ExtDBVersion"))]
+    #[serde(rename(serialize = "ESM_ExtDBVersion"), default)]
     pub extdb_version: u8,
 
     #[serde(rename(serialize = "ESM_Gambling_Modifier"))]
