@@ -35,7 +35,7 @@ pub enum Data {
 
     // Init
     Init(Init),
-    PostInit(PostInit),
+    PostInit(Box<PostInit>),
 
     // Query
     Query(Query),
