@@ -29,6 +29,8 @@ macro_rules! retrieve_data {
 #[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Data {
     Empty,
+    Ping,
+    Pong,
     Test(Test),
 
     // Init
@@ -57,7 +59,6 @@ impl Default for Data {
 impl IntoArma for Data {
     fn to_arma(&self) -> ArmaValue {
         match self {
-            Data::Empty => ArmaValue::Null,
             Data::Test(t) => t.to_arma(),
             Data::Init(i) => i.to_arma(),
             Data::PostInit(pi) => pi.to_arma(),
@@ -67,6 +68,7 @@ impl IntoArma for Data {
             Data::SendToChannel(d) => d.to_arma(),
             Data::Sqf(s) => s.to_arma(),
             Data::SqfResult(s) => s.to_arma(),
+            _ => ArmaValue::Null,
         }
     }
 }
@@ -90,6 +92,8 @@ impl std::fmt::Display for Data {
             Data::Reward(d) => write!(f, "{:?}", d),
             Data::Sqf(d) => write!(f, "{:?}", d),
             Data::SqfResult(d) => write!(f, "{:?}", d),
+            Data::Ping => write!(f, "Ping"),
+            Data::Pong => write!(f, "Pong"),
         }
     }
 }
@@ -170,6 +174,7 @@ impl Init {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ImplIntoArma, PartialEq, Eq)]
 pub struct PostInit {
+    // Set by the client
     #[serde(rename(serialize = "ESM_BuildNumber"), default)]
     pub build_number: String,
 
@@ -245,6 +250,7 @@ pub struct PostInit {
     #[serde(rename(serialize = "ESM_TerritoryAdminUIDs"))]
     pub territory_admin_uids: Vec<String>,
 
+    // Set by the client
     #[serde(rename(serialize = "ESM_Version"), default)]
     pub version: String,
 }

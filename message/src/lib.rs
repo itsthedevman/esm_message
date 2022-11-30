@@ -224,19 +224,10 @@ impl Default for Message {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum Type {
-    // System Ping event
-    Ping,
-
-    // System Pong event
-    Pong,
-
     // Automatic testing
     Test,
 
-    // Initialization event
-    Init,
-
-    // Client event
+    // Events, such as Init, PostInit, etc.
     Event,
 
     // Database query
@@ -359,7 +350,7 @@ mod tests {
 
     #[test]
     fn test_encrypt_and_decrypt_message() {
-        let mut message = Message::new().set_type(Type::Init);
+        let mut message = Message::new();
 
         let server_init = Init {
             server_name: "server_name".into(),
@@ -394,7 +385,7 @@ mod tests {
         assert!(decrypted_message.is_ok());
 
         let decrypted_message = decrypted_message.unwrap();
-        assert_eq!(decrypted_message.message_type, Type::Init);
+        assert_eq!(decrypted_message.message_type, Type::Event);
 
         // Ensure it has a server ID
         assert!(decrypted_message.server_id.is_some());
@@ -412,19 +403,19 @@ mod tests {
 
     #[test]
     fn test_it_serializes_with_server_id() {
-        let mut message = Message::new().set_type(Type::Init);
+        let mut message = Message::new();
         message.server_id = Some("some_server_id".as_bytes().to_vec());
 
         let serialized_message = serde_json::to_string(&message);
         assert!(serialized_message.is_ok());
 
         let serialized_message = serialized_message.unwrap();
-        assert_eq!(serialized_message, format!("{{\"id\":\"{}\",\"type\":\"init\",\"server_id\":[115,111,109,101,95,115,101,114,118,101,114,95,105,100]}}", message.id));
+        assert_eq!(serialized_message, format!("{{\"id\":\"{}\",\"type\":\"event\",\"server_id\":[115,111,109,101,95,115,101,114,118,101,114,95,105,100]}}", message.id));
     }
 
     #[test]
     fn test_it_serializes_without_server_id() {
-        let message = Message::new().set_type(Type::Init);
+        let message = Message::new();
 
         let serialized_message = serde_json::to_string(&message);
         assert!(serialized_message.is_ok());
@@ -432,7 +423,7 @@ mod tests {
         let serialized_message = serialized_message.unwrap();
         assert_eq!(
             serialized_message,
-            format!("{{\"id\":\"{}\",\"type\":\"init\"}}", message.id)
+            format!("{{\"id\":\"{}\",\"type\":\"event\"}}", message.id)
         );
     }
 
@@ -474,17 +465,17 @@ mod tests {
 
     #[test]
     fn test_serializing_empty_message() {
-        let message = Message::new().set_type(Type::Init);
+        let message = Message::new();
         let json = serde_json::to_string(&message).unwrap();
 
-        let expected = format!("{{\"id\":\"{}\",\"type\":\"init\"}}", message.id);
+        let expected = format!("{{\"id\":\"{}\",\"type\":\"event\"}}", message.id);
         assert_eq!(json, expected);
     }
 
     #[test]
     fn test_deserializing_empty_message() {
         let uuid = Uuid::new_v4();
-        let input = format!("{{\"id\":\"{}\",\"type\":\"init\"}}", uuid);
+        let input = format!("{{\"id\":\"{}\",\"type\":\"event\"}}", uuid);
         let message: Message = serde_json::from_str(&input).unwrap();
 
         assert_eq!(message.id, uuid);
