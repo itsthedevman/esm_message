@@ -181,6 +181,9 @@ pub struct PostInit {
     #[serde(rename(serialize = "ESM_CommunityID"))]
     pub community_id: String,
 
+    #[serde(skip_serializing)]
+    pub extdb_path: String,
+
     #[serde(rename(serialize = "ESM_ExtDBVersion"))]
     pub extdb_version: u8,
 
